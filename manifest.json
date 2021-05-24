@@ -1,0 +1,10 @@
+{
+	"id": "obsidian-csv-table",
+	"name": "CSV Table",
+	"version": "0.1.0",
+	"minAppVersion": "0.11.10",
+	"description": "Allows you to display all/part of a CSV file as a table in your obsidian preview.",
+	"author": "Adam Coddington <me@adamcoddington.net>",
+	"authorUrl": "https://coddingtonbear.net/",
+	"isDesktopOnly": false
+}
