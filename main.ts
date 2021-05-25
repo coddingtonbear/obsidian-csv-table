@@ -1,9 +1,11 @@
 import { Plugin, MarkdownRenderChild } from 'obsidian';
 import parseCsv from 'csv-parse/lib/sync'
+import {Options} from 'csv-parse'
 import YAML from 'yaml'
 
 interface CsvSpec {
 	filename?: string
+	csvOptions?: Options
 	columns?: string[]
 	where?: string[]
 }
@@ -39,7 +41,14 @@ export default class CsvTablePlugin extends Plugin {
 			}
 			const data = await this.app.vault.adapter.read(csvSpec.filename)
 
-			const csvData = parseCsv(data, {columns: true})
+			const defaultCsvOptions: Options = {
+				trim: true,
+				columns: true,
+				skip_empty_lines: true
+			}
+			const {csvOptions = defaultCsvOptions} = csvSpec
+			console.log(csvOptions)
+			const csvData = parseCsv(data, csvOptions)
 			const filteredCsvData = this.filterConstraints(csvSpec.where, csvData)
 
 			ctx.addChild(new TableRenderer(csvSpec.columns, filteredCsvData, el));
