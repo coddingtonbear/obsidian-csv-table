@@ -41,12 +41,15 @@ export default class CsvTablePlugin extends Plugin {
 			}
 			const data = await this.app.vault.adapter.read(csvSpec.filename)
 
-			const defaultCsvOptions: Options = {
-				trim: true,
-				columns: true,
-				skip_empty_lines: true
+			const {
+				trim = true,
+				columns = true,
+				skip_empty_lines = true,
+				...extraOptions
+			} = (csvSpec.csvOptions ?? {})
+			const csvOptions = {
+				trim, columns, skip_empty_lines, ...extraOptions
 			}
-			const {csvOptions = defaultCsvOptions} = csvSpec
 			console.log(csvOptions)
 			const csvData = parseCsv(data, csvOptions)
 			const filteredCsvData = this.filterConstraints(csvSpec.where, csvData)
@@ -88,6 +91,7 @@ class TableRenderer extends MarkdownRenderChild {
 		}
 
 		for (const row of this.rows) {
+			console.log(row)
 
 			const trEl = tbodyEl.createEl('tr')
 
