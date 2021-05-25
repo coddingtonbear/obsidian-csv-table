@@ -2,12 +2,13 @@ import { Plugin, MarkdownRenderChild } from 'obsidian';
 import parseCsv from 'csv-parse/lib/sync'
 import {Options} from 'csv-parse'
 import YAML from 'yaml'
+import {Parser, Expression} from 'expr-eval'
 
 interface CsvSpec {
 	filename?: string
 	csvOptions?: Options
 	columns?: string[]
-	where?: string[]
+	filter?: string[] | string
 }
 
 function renderErrorPre(container: HTMLElement, error: string): HTMLElement {
@@ -42,24 +43,57 @@ export default class CsvTablePlugin extends Plugin {
 			const data = await this.app.vault.adapter.read(csvSpec.filename)
 
 			const {
+				cast = true,
+				cast_date = true,
 				trim = true,
 				columns = true,
 				skip_empty_lines = true,
 				...extraOptions
 			} = (csvSpec.csvOptions ?? {})
 			const csvOptions = {
-				trim, columns, skip_empty_lines, ...extraOptions
+				cast, trim, columns, skip_empty_lines, ...extraOptions
 			}
-			console.log(csvOptions)
 			const csvData = parseCsv(data, csvOptions)
-			const filteredCsvData = this.filterConstraints(csvSpec.where, csvData)
+
+			let filteredCsvData: Record<string, any>[] = []
+			try {
+				filteredCsvData = this.filterConstraints(
+					csvSpec.filter ? (typeof csvSpec.filter === 'string' ? [csvSpec.filter] : csvSpec.filter): [],
+					csvData
+				)
+			} catch(e) {
+				renderErrorPre(el, "Error evaluating filter expressions: " + e.message)
+			}
 
 			ctx.addChild(new TableRenderer(csvSpec.columns, filteredCsvData, el));
 		});
 	}
 
-	filterConstraints(constraints: string[], rows: any[]): any[] {
-		return rows
+	filterConstraints(constraints: string[], rows: Record<string, any>[]): Record<string, any>[] {
+		const filteredRows: Record<string, any>[] = []
+		const expressions: Expression[] = []
+		const parser = new Parser()
+
+		for(const expression of constraints) {
+			expressions.push(parser.parse(expression))
+		}
+
+		let rowIndex = 1;
+		for(const row of rows) {
+			let passesTests = true
+
+			for(const expression of expressions) {
+				if(! expression.evaluate({_index: rowIndex, ...row})) {
+					passesTests = false
+					break
+				}
+			}
+			if (passesTests) {
+				filteredRows.push(row)
+			}
+			rowIndex += 1
+		}
+		return filteredRows
 	}
 
 	onunload() {
@@ -91,8 +125,6 @@ class TableRenderer extends MarkdownRenderChild {
 		}
 
 		for (const row of this.rows) {
-			console.log(row)
-
 			const trEl = tbodyEl.createEl('tr')
 
 			for (const column of columns) {

@@ -85,3 +85,58 @@ filename: my_csv_file.csv
         </tr>
     </tbody>
 </table>
+
+## Filtering displayed rows
+
+Maybe you would like to display only a subset of the rows of your CSV?
+If so, you can provide a `filter` expression to limit which rows are shown:
+
+~~~
+```csvtable
+filename: my_csv_file.csv
+filter: population < 100000000
+```
+~~~
+
+<table>
+    <thead>
+        <tr>
+            <th>name</th>
+            <th>population</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Colombia</td>
+            <td>50340000</td>
+        </tr>
+    </tbody>
+</table>
+
+By default, the parser will attempt to cast the values of each field
+to an integer, boolean, or date object where appropriate for use
+in your filter expressions.
+Also, note that your filter expression can also be provided as a list;
+those expressions will be and-ed together, e.g.:
+
+~~~
+```csvtable
+filename: my_csv_file.csv
+filter:
+- population < 100000000
+- name == "Colombia"
+```
+~~~
+
+## Setting CSV parser options
+
+You can set options for the CSV parser by setting the `csvOptions` field
+using the values described here: https://csv.js.org/parse/options/.
+
+~~~
+```csvtable
+filename: my_csv_file.csv
+csvOptions:
+  delimiter: ";"
+```
+~~~
