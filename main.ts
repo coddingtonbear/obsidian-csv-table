@@ -1,5 +1,6 @@
 import { Plugin, MarkdownRenderChild } from 'obsidian';
 import parseCsv from 'csv-parse/lib/sync'
+import YAML from 'yaml'
 
 interface CsvSpec {
 	filename?: string
@@ -20,7 +21,7 @@ export default class CsvTablePlugin extends Plugin {
 		this.registerMarkdownCodeBlockProcessor("csvtable", async (csvSpecString: string, el, ctx) => {
 			let csvSpec: CsvSpec = {}
 			try {
-				csvSpec = JSON.parse(csvSpecString)
+				csvSpec = YAML.parse(csvSpecString)
 			} catch (e) {
 				renderErrorPre(el, "Could not parse CSV table spec.")
 				return

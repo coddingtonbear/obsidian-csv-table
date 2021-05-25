@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "csv-parse": "^4.15.4",
-    "static-eval": "^2.1.0"
+    "static-eval": "^2.1.0",
+    "yaml": "^1.10.2"
   }
 }

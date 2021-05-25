@@ -16,9 +16,7 @@ Russia,Moscow,144400000
 
 ~~~
 ```csvtable
-{
-    "filename": "countries.csv"
-}
+filename: countries.csv
 ```
 ~~~
 
@@ -58,11 +56,32 @@ file to render, e.g:
 
 ~~~
 ```csvtable
-{
-    "columns": [
-        "name"
-    ],
-    "filename": "my_csv_file.csv"
-}
+columns:
+- name
+- population
+filename: my_csv_file.csv
 ```
 ~~~
+
+<table>
+    <thead>
+        <tr>
+            <th>name</th>
+            <th>population</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>United States of America</td>
+            <td>328200000</td>
+        </tr>
+        <tr>
+            <td>Colombia</td>
+            <td>50340000</td>
+        </tr>
+        <tr>
+            <td>Russia</td>
+            <td>144400000</td>
+        </tr>
+    </tbody>
+</table>
