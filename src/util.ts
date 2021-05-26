@@ -41,7 +41,6 @@ export function evaluateExpression(row: Record<string, any>, expression: Express
   const extendedRow: Record<string, any> = { ...row }
 
   for (const columnVariable in columnVariables ?? {}) {
-    console.log(columnVariable, row[columnVariables[columnVariable]])
     extendedRow[columnVariable] = row[columnVariables[columnVariable]]
   }
 

@@ -8,7 +8,7 @@ now you can.
 Imagine you have the following CSV file named `countries.csv`:
 
 ```
-name,capital,population
+name,capitol,population
 United States of America,"Washington, DC",328200000
 Colombia,Bogota,50340000
 Russia,Moscow,144400000
@@ -26,7 +26,7 @@ Will render a table like:
     <thead>
         <tr>
             <th>name</th>
-            <th>capital</th>
+            <th>capitol</th>
             <th>population</th>
         </tr>
     </thead>
