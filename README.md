@@ -49,7 +49,23 @@ Will render a table like:
     </tbody>
 </table>
 
-## Selecting particular columns
+## Properties
+
+- `source`: Path to the csv file to render within your notes.
+- `csvOptions`: Options to use for decoding the referenced CSV file;
+  see https://csv.js.org/parse/options/ for available choices.
+- `columns`: A list of columns to render. If unspecified, all
+  columns in the referenced CSV will be rendered. See "Selecting
+  particular columns" below for details.
+- `filter`: A list of filter expressions to use for limiting which
+  rows of the referenced CSV will be displayed.  If unspecified,
+  all rows of the referenced CSV will be rendered taking into account
+  the value specified for `maxRows` below. See "Filtering
+  displayed rows" below for details.
+- `maxRows`: The maximum number of rows to display. If unspecified,
+  all unfiltered rows of the referenced CSV will be displayed.
+
+### Selecting particular columns
 
 You can use the `columns` field to control which columns of your CSV
 file to render, e.g:
@@ -86,7 +102,7 @@ source: my_csv_file.csv
     </tbody>
 </table>
 
-## Filtering displayed rows
+### Filtering displayed rows
 
 Maybe you would like to display only a subset of the rows of your CSV?
 If so, you can provide a `filter` expression to limit which rows are shown:
@@ -125,18 +141,5 @@ source: my_csv_file.csv
 filter:
 - population < 100000000
 - name == "Colombia"
-```
-~~~
-
-## Setting CSV parser options
-
-You can set options for the CSV parser by setting the `csvOptions` field
-using the values described here: https://csv.js.org/parse/options/.
-
-~~~
-```csvtable
-source: my_csv_file.csv
-csvOptions:
-  delimiter: ";"
 ```
 ~~~
