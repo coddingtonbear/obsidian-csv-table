@@ -2,7 +2,8 @@ import { Plugin, MarkdownRenderChild } from 'obsidian';
 import parseCsv from 'csv-parse/lib/sync'
 import {Options} from 'csv-parse'
 import YAML from 'yaml'
-import {Parser, Expression} from 'expr-eval'
+
+import {getCellValue, applyRowFilters, getColumnInfo} from './util'
 
 interface CsvSpec {
 	source?: string
@@ -27,12 +28,12 @@ export default class CsvTablePlugin extends Plugin {
 			try {
 				csvSpec = YAML.parse(csvSpecString)
 			} catch (e) {
-				renderErrorPre(el, "Could not parse CSV table spec.")
+				renderErrorPre(el, `Could not parse CSV table spec: ${e.message}.`)
 				return
 			}
 
 			if (!csvSpec.source) {
-				renderErrorPre(el, "Parameter 'filename' is required.")
+				renderErrorPre(el, "Parameter 'source' is required.")
 				return
 			}
 
@@ -58,55 +59,23 @@ export default class CsvTablePlugin extends Plugin {
 
 			let filteredCsvData: Record<string, any>[] = []
 			try {
-				filteredCsvData = this.filterConstraints(
+				filteredCsvData = applyRowFilters(
 					csvSpec.filter ? (typeof csvSpec.filter === 'string' ? [csvSpec.filter] : csvSpec.filter): [],
 					csvSpec.maxRows ?? Infinity,
 					csvData
 				)
 			} catch(e) {
-				renderErrorPre(el, "Error evaluating filter expressions: " + e.message)
+				renderErrorPre(el, `Error evaluating filter expressions: ${e.message}.`)
 			}
 
 			ctx.addChild(new TableRenderer(csvSpec.columns, filteredCsvData, el));
 		});
 	}
 
-	filterConstraints(constraints: string[], maxRows: number = Infinity, rows: Record<string, any>[]): Record<string, any>[] {
-		const filteredRows: Record<string, any>[] = []
-		const expressions: Expression[] = []
-		const parser = new Parser()
-
-		for(const expression of constraints) {
-			expressions.push(parser.parse(expression))
-		}
-
-		let rowIndex = 1;
-		for(const row of rows) {
-			let passesTests = true
-
-			if (rowIndex > maxRows) {
-				break
-			}
-
-			for(const expression of expressions) {
-				if(! expression.evaluate({_index: rowIndex, ...row})) {
-					passesTests = false
-					break
-				}
-			}
-			if (passesTests) {
-				filteredRows.push(row)
-			}
-			rowIndex += 1
-		}
-		return filteredRows
-	}
-
 	onunload() {
 		console.log('Unloading CSV table plugin');
 	}
 }
-
 
 class TableRenderer extends MarkdownRenderChild {
 	constructor(public columns: string[], public rows: any[], public container: HTMLElement) {
@@ -126,15 +95,20 @@ class TableRenderer extends MarkdownRenderChild {
 		const headerEl = theadEl.createEl('tr')
 		const tbodyEl = tableEl.createEl('tbody')
 
+		const columnExpressions: string[] = []
+
 		for (const column of columns) {
-			headerEl.createEl('th', {text: column})
+			const columnInfo = getColumnInfo(column)
+
+			headerEl.createEl('th', {text: columnInfo.name})
+			columnExpressions.push(columnInfo.expression)
 		}
 
 		for (const row of this.rows) {
 			const trEl = tbodyEl.createEl('tr')
 
-			for (const column of columns) {
-				trEl.createEl('td', {text: typeof row[column] === "string" ? row[column] : JSON.stringify(row[column])})
+			for (const columnExpression of columnExpressions) {
+				trEl.createEl('td', {text: getCellValue(row, columnExpression)})
 			}
 		}
 	}
