@@ -102,6 +102,41 @@ source: my_csv_file.csv
     </tbody>
 </table>
 
+It's also possible for you to set better names for your columns or use
+expressions:
+
+~~~
+```csvtable
+columns:
+- name as "Country Name"
+- population  / 1000000 as "Population (Millions)"
+source: my_csv_file.csv
+```
+~~~
+
+<table>
+    <thead>
+        <tr>
+            <th>Country Name</th>
+            <th>Population (Millions)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>United States of America</td>
+            <td>328.2</td>
+        </tr>
+        <tr>
+            <td>Colombia</td>
+            <td>50.34</td>
+        </tr>
+        <tr>
+            <td>Russia</td>
+            <td>144.4</td>
+        </tr>
+    </tbody>
+</table>
+
 ### Filtering displayed rows
 
 Maybe you would like to display only a subset of the rows of your CSV?
