@@ -45,8 +45,6 @@ export function evaluateExpression(row: Record<string, any>, expression: Express
     extendedRow[columnVariable] = row[columnVariables[columnVariable]]
   }
 
-  console.log(extendedRow)
-
   return expression.evaluate(extendedRow)
 }
 
