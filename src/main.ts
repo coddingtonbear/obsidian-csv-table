@@ -1,6 +1,6 @@
-import { getCodeBlockData } from 'code_block';
 import { Plugin } from 'obsidian';
 
+import { getCodeBlockData } from './code_block';
 import { TableRenderer } from './render'
 
 function renderErrorPre(container: HTMLElement, error: string): HTMLElement {
