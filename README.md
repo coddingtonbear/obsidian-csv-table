@@ -1,7 +1,7 @@
 ## Obsidian CSV Table
 
-Have data in a CSV file that you'd like to render in an Obsidian preview?
-
+Have data in a CSV file that you'd like to render as a table in Obsidian
+now you can.
 
 ## Quickstart
 
