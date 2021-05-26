@@ -5,14 +5,15 @@ import YAML from 'yaml'
 import {Parser, Expression} from 'expr-eval'
 
 interface CsvSpec {
-	filename?: string
+	source?: string
 	csvOptions?: Options
 	columns?: string[]
 	filter?: string[] | string
+	maxRows?: number
 }
 
 function renderErrorPre(container: HTMLElement, error: string): HTMLElement {
-	let pre = container.createEl('pre', { cls: ["dataview", "dataview-error"] });
+	let pre = container.createEl('pre', { cls: ["csv-table", "csv-error"] });
 	pre.appendText(error);
 	return pre;
 }
@@ -30,17 +31,17 @@ export default class CsvTablePlugin extends Plugin {
 				return
 			}
 
-			if (!csvSpec.filename) {
+			if (!csvSpec.source) {
 				renderErrorPre(el, "Parameter 'filename' is required.")
 				return
 			}
 
-			const exists = await this.app.vault.adapter.exists(csvSpec.filename)
+			const exists = await this.app.vault.adapter.exists(csvSpec.source)
 			if (!exists) {
-				renderErrorPre(el, `CSV file '${csvSpec.filename}' could not be found.`)
+				renderErrorPre(el, `CSV file '${csvSpec.source}' could not be found.`)
 				return
 			}
-			const data = await this.app.vault.adapter.read(csvSpec.filename)
+			const data = await this.app.vault.adapter.read(csvSpec.source)
 
 			const {
 				cast = true,
@@ -59,6 +60,7 @@ export default class CsvTablePlugin extends Plugin {
 			try {
 				filteredCsvData = this.filterConstraints(
 					csvSpec.filter ? (typeof csvSpec.filter === 'string' ? [csvSpec.filter] : csvSpec.filter): [],
+					csvSpec.maxRows ?? Infinity,
 					csvData
 				)
 			} catch(e) {
@@ -69,7 +71,7 @@ export default class CsvTablePlugin extends Plugin {
 		});
 	}
 
-	filterConstraints(constraints: string[], rows: Record<string, any>[]): Record<string, any>[] {
+	filterConstraints(constraints: string[], maxRows: number = Infinity, rows: Record<string, any>[]): Record<string, any>[] {
 		const filteredRows: Record<string, any>[] = []
 		const expressions: Expression[] = []
 		const parser = new Parser()
@@ -81,6 +83,10 @@ export default class CsvTablePlugin extends Plugin {
 		let rowIndex = 1;
 		for(const row of rows) {
 			let passesTests = true
+
+			if (rowIndex > maxRows) {
+				break
+			}
 
 			for(const expression of expressions) {
 				if(! expression.evaluate({_index: rowIndex, ...row})) {

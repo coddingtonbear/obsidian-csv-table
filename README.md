@@ -16,7 +16,7 @@ Russia,Moscow,144400000
 
 ~~~
 ```csvtable
-filename: countries.csv
+source: countries.csv
 ```
 ~~~
 
@@ -59,7 +59,7 @@ file to render, e.g:
 columns:
 - name
 - population
-filename: my_csv_file.csv
+source: my_csv_file.csv
 ```
 ~~~
 
@@ -93,7 +93,7 @@ If so, you can provide a `filter` expression to limit which rows are shown:
 
 ~~~
 ```csvtable
-filename: my_csv_file.csv
+source: my_csv_file.csv
 filter: population < 100000000
 ```
 ~~~
@@ -121,7 +121,7 @@ those expressions will be and-ed together, e.g.:
 
 ~~~
 ```csvtable
-filename: my_csv_file.csv
+source: my_csv_file.csv
 filter:
 - population < 100000000
 - name == "Colombia"
@@ -135,7 +135,7 @@ using the values described here: https://csv.js.org/parse/options/.
 
 ~~~
 ```csvtable
-filename: my_csv_file.csv
+source: my_csv_file.csv
 csvOptions:
   delimiter: ";"
 ```
