@@ -118,8 +118,10 @@ expressions:
 ~~~
 ```csvtable
 columns:
-- name as "Country Name"
-- population  / 1000000 as "Population (Millions)"
+- expression: name
+  name: Country Name
+- expression: population  / 1000000
+  name: Population (Millions)
 source: my_csv_file.csv
 ```
 ~~~

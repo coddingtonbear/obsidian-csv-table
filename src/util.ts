@@ -58,22 +58,18 @@ export function getCellDisplay(row: Record<string, any>, expression: string): an
   }
 }
 
-interface ColumnInfo {
+export interface ColumnInfo {
   name: string
   expression: string
 }
 
-export function getColumnInfo(column: string): ColumnInfo {
-  const matchResult = column.match(/(.*) as (?:'|")(.*)(?:'|")/)
-  if (matchResult) {
-    return {
-      name: matchResult[2],
-      expression: matchResult[1]
-    }
-  } else {
+export function getColumnInfo(column: string | ColumnInfo): ColumnInfo {
+  if (typeof column === 'string') {
     return {
       name: column,
       expression: column
     }
+  } else {
+    return column
   }
 }
