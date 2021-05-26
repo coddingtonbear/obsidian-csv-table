@@ -68,6 +68,13 @@ Will render a table like:
 - `maxRows`: The maximum number of rows to display. If unspecified,
   all unfiltered rows of the referenced CSV will be displayed.
 
+### Expressions
+
+This library uses `simple-eval` for expression evaluation;
+see their documentation to see more information about the
+expression syntax and what functions are available:
+https://www.npmjs.com/package/expr-eval#expression-syntax
+
 ### Selecting particular columns
 
 You can use the `columns` field to control which columns of your CSV
