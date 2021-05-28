@@ -1,4 +1,3 @@
-import { Vault } from "obsidian";
 import parseCsv from 'csv-parse/lib/sync'
 import { Options } from 'csv-parse'
 import YAML from 'yaml'
@@ -11,20 +10,25 @@ export interface CodeBlockData {
   rows: Record<string, any>[]
 }
 
-interface CsvSpec {
-  source?: string
+export interface NamedColumn {
+  name: string
+  expression: string
+}
+
+export interface CsvTableSpec {
+  source: string
   csvOptions?: Options
-  columns?: string[]
+  columns?: (NamedColumn | string)[]
   columnVariables?: Record<string, string>
   filter?: string[] | string
   maxRows?: number
 }
 
-export async function getCodeBlockData(
-  csvSpecString: string,
-  vault: Vault,
-): Promise<CodeBlockData> {
-  let csvSpec: CsvSpec = {}
+export function getCsvTableSpec(csvSpecString: string): CsvTableSpec {
+  let csvSpec: CsvTableSpec = {
+    source: ''  // Assert that this has a proper value below
+  }
+
   try {
     csvSpec = YAML.parse(csvSpecString)
   } catch (e) {
@@ -35,12 +39,13 @@ export async function getCodeBlockData(
     throw new Error("Parameter 'source' is required.")
   }
 
-  const exists = await vault.adapter.exists(csvSpec.source)
-  if (!exists) {
-    throw new Error(`CSV file '${csvSpec.source}' could not be found.`)
-  }
-  const data = await vault.adapter.read(csvSpec.source)
+  return csvSpec
+}
 
+export function getCodeBlockData(
+  csvSpec: CsvTableSpec,
+  csvData: string
+): CodeBlockData {
   const {
     cast = true,
     cast_date = true,
@@ -52,22 +57,27 @@ export async function getCodeBlockData(
   const csvOptions = {
     cast, trim, columns, skip_empty_lines, ...extraOptions
   }
-  const csvData = parseCsv(data, csvOptions)
+  const parsedCsvData = parseCsv(csvData, csvOptions)
+  const columnNames: string[] = []
 
   try {
     for (const column of csvSpec.columns ?? []) {
       const columnInfo = getColumnInfo(column)
+      const expression = compileExpression(columnInfo.expression)
+      columnNames.push(columnInfo.name)
 
-      if (columnInfo.name != columnInfo.expression) {
-        const expression = compileExpression(columnInfo.expression)
-
-        for (const row of csvData) {
-          row[columnInfo.name] = evaluateExpression(row, expression, csvSpec.columnVariables)
-        }
+      for (const row of parsedCsvData) {
+        row[columnInfo.name] = evaluateExpression(row, expression, csvSpec.columnVariables)
       }
     }
   } catch (e) {
     throw new Error(`Error evaluating column expressions: ${e.message}.`)
+  }
+
+  if (columnNames.length === 0) {
+    for (const key of Object.keys(parsedCsvData[0])) {
+      columnNames.push(key)
+    }
   }
 
   let filteredCsvData: Record<string, any>[] = []
@@ -75,7 +85,7 @@ export async function getCodeBlockData(
     filteredCsvData = applyRowFilters(
       csvSpec.filter ? (typeof csvSpec.filter === 'string' ? [csvSpec.filter] : csvSpec.filter) : [],
       csvSpec.maxRows ?? Infinity,
-      csvData,
+      parsedCsvData,
       csvSpec.columnVariables
     )
   } catch (e) {
@@ -83,7 +93,7 @@ export async function getCodeBlockData(
   }
 
   return {
-    columns: csvSpec.columns,
+    columns: columnNames,
     rows: filteredCsvData
   }
 }

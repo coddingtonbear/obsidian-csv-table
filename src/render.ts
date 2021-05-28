@@ -12,8 +12,6 @@ export class TableRenderer extends MarkdownRenderChild {
   }
 
   async render() {
-    const columns = this.columns?.length ? this.columns : Object.keys(this.rows[0])
-
     const tableEl = this.container.createEl('table')
 
     const theadEl = tableEl.createEl('thead')
@@ -22,7 +20,7 @@ export class TableRenderer extends MarkdownRenderChild {
 
     const columnNames: string[] = []
 
-    for (const column of columns) {
+    for (const column of this.columns) {
       const columnInfo = getColumnInfo(column)
 
       headerEl.createEl('th', { text: columnInfo.name })
