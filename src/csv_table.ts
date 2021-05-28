@@ -5,7 +5,7 @@ import { compileExpression } from 'filtrex'
 
 import { applyRowFilters, getColumnInfo, evaluateExpression } from './util'
 
-export interface CodeBlockData {
+export interface CsvTableData {
   columns: string[],
   rows: Record<string, any>[]
 }
@@ -42,10 +42,10 @@ export function getCsvTableSpec(csvSpecString: string): CsvTableSpec {
   return csvSpec
 }
 
-export function getCodeBlockData(
+export function getFilteredCsvData(
   csvSpec: CsvTableSpec,
   csvData: string
-): CodeBlockData {
+): CsvTableData {
   const {
     cast = true,
     cast_date = true,

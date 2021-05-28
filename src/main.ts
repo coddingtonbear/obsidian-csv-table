@@ -1,6 +1,6 @@
 import { Plugin } from 'obsidian';
 
-import { getCodeBlockData, getCsvTableSpec } from './code_block';
+import { getFilteredCsvData, getCsvTableSpec } from './csv_table';
 import { TableRenderer, renderErrorPre } from './render'
 
 export default class CsvTablePlugin extends Plugin {
@@ -15,8 +15,8 @@ export default class CsvTablePlugin extends Plugin {
         }
         const csvData = await this.app.vault.adapter.read(tableSpec.source)
 
-        const codeBlockData = await getCodeBlockData(tableSpec, csvData)
-        ctx.addChild(new TableRenderer(codeBlockData.columns, codeBlockData.rows, el));
+        const filteredCsvData = getFilteredCsvData(tableSpec, csvData)
+        ctx.addChild(new TableRenderer(filteredCsvData.columns, filteredCsvData.rows, el));
       } catch (e) {
         renderErrorPre(el, e.message)
         return

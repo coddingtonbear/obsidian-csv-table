@@ -1,4 +1,4 @@
-import { getCodeBlockData, getCsvTableSpec, CsvTableSpec, CodeBlockData } from "./code_block"
+import { getFilteredCsvData, getCsvTableSpec, CsvTableSpec, CsvTableData } from "./csv_table"
 
 const SAMPLE_CSV_DATA: string[][] = [
   ["country", "capitol", "population"],
@@ -17,7 +17,7 @@ function getCsvString(data: string[][]): string {
   return rows.join('\n')
 }
 
-describe('code_block/getCsvTableSpec', () => {
+describe('csv_table/getCsvTableSpec', () => {
   test('Assert that error is raised if no source specified', () => {
     const tableSpec = ""
 
@@ -34,15 +34,15 @@ describe('code_block/getCsvTableSpec', () => {
   })
 })
 
-describe('code_block/getCodeBlockData', () => {
+describe('csv_table/getCodeBlockData', () => {
   test('basic', () => {
     const csvData = getCsvString(SAMPLE_CSV_DATA)
     const tableSpec: CsvTableSpec = {
       source: 'arbitrary.csv'
     }
 
-    const actual = getCodeBlockData(tableSpec, csvData)
-    const expected: CodeBlockData = {
+    const actual = getFilteredCsvData(tableSpec, csvData)
+    const expected: CsvTableData = {
       columns: [
         "country",
         "capitol",
@@ -80,8 +80,8 @@ describe('code_block/getCodeBlockData', () => {
       ]
     }
 
-    const actual = getCodeBlockData(tableSpec, csvData)
-    const expected: CodeBlockData = {
+    const actual = getFilteredCsvData(tableSpec, csvData)
+    const expected: CsvTableData = {
       columns: [
         "country",
         "population / 1000000",
@@ -124,8 +124,8 @@ describe('code_block/getCodeBlockData', () => {
       ]
     }
 
-    const actual = getCodeBlockData(tableSpec, csvData)
-    const expected: CodeBlockData = {
+    const actual = getFilteredCsvData(tableSpec, csvData)
+    const expected: CsvTableData = {
       columns: [
         "country",
         "millions"
@@ -162,8 +162,8 @@ describe('code_block/getCodeBlockData', () => {
       filter: "population > 300000000",
     }
 
-    const actual = getCodeBlockData(tableSpec, csvData)
-    const expected: CodeBlockData = {
+    const actual = getFilteredCsvData(tableSpec, csvData)
+    const expected: CsvTableData = {
       columns: [
         "country",
         "capitol",
@@ -191,8 +191,8 @@ describe('code_block/getCodeBlockData', () => {
       ]
     }
 
-    const actual = getCodeBlockData(tableSpec, csvData)
-    const expected: CodeBlockData = {
+    const actual = getFilteredCsvData(tableSpec, csvData)
+    const expected: CsvTableData = {
       columns: [
         "country",
         "capitol",
@@ -224,8 +224,8 @@ describe('code_block/getCodeBlockData', () => {
       ]
     }
 
-    const actual = getCodeBlockData(tableSpec, csvData)
-    const expected: CodeBlockData = {
+    const actual = getFilteredCsvData(tableSpec, csvData)
+    const expected: CsvTableData = {
       columns: [
         "1st",
         "2nd",
