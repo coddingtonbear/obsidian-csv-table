@@ -1,4 +1,6 @@
-import { Parser, Expression } from 'expr-eval'
+import { compileExpression } from 'filtrex'
+
+type ExpressionFn = (item: Record<string, any>) => any
 
 
 export function applyRowFilters(
@@ -8,11 +10,10 @@ export function applyRowFilters(
   columnVariables?: Record<string, string>
 ): Record<string, any>[] {
   const filteredRows: Record<string, any>[] = []
-  const expressions: Expression[] = []
-  const parser = new Parser()
+  const expressions: ExpressionFn[] = []
 
   for (const expression of filters) {
-    expressions.push(parser.parse(expression))
+    expressions.push(compileExpression(expression))
   }
 
   let rowIndex = 1;
@@ -37,14 +38,14 @@ export function applyRowFilters(
   return filteredRows
 }
 
-export function evaluateExpression(row: Record<string, any>, expression: Expression, columnVariables?: Record<string, string>): any {
+export function evaluateExpression(row: Record<string, any>, expression: ExpressionFn, columnVariables?: Record<string, string>): any {
   const extendedRow: Record<string, any> = { ...row }
 
   for (const columnVariable in columnVariables ?? {}) {
     extendedRow[columnVariable] = row[columnVariables[columnVariable]]
   }
 
-  return expression.evaluate(extendedRow)
+  return expression(extendedRow)
 }
 
 export function getCellDisplay(row: Record<string, any>, expression: string): any {

@@ -2,7 +2,7 @@ import { Vault } from "obsidian";
 import parseCsv from 'csv-parse/lib/sync'
 import { Options } from 'csv-parse'
 import YAML from 'yaml'
-import { Parser } from 'expr-eval';
+import { compileExpression } from 'filtrex'
 
 import { applyRowFilters, getColumnInfo, evaluateExpression } from './util'
 
@@ -57,10 +57,9 @@ export async function getCodeBlockData(
   try {
     for (const column of csvSpec.columns ?? []) {
       const columnInfo = getColumnInfo(column)
-      const parser = new Parser()
 
       if (columnInfo.name != columnInfo.expression) {
-        const expression = parser.parse(columnInfo.expression)
+        const expression = compileExpression(columnInfo.expression)
 
         for (const row of csvData) {
           row[columnInfo.name] = evaluateExpression(row, expression, csvSpec.columnVariables)

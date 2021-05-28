@@ -1,4 +1,4 @@
-import { Parser } from 'expr-eval'
+import { compileExpression } from 'filtrex'
 
 import { applyRowFilters, evaluateExpression, getColumnInfo, getCellDisplay, ColumnInfo } from './util'
 
@@ -62,7 +62,7 @@ describe('util/applyRowFilters', () => {
     const finalRows = applyRowFilters(
       [
         "population < 300000000",
-        "capitol == 'Moscow'",
+        "capitol == \"Moscow\"",
       ],
       Infinity,
       EXAMPLE_ROWS,
@@ -92,8 +92,7 @@ describe('util/applyRowFilters', () => {
 
 describe('util/evaluateExpression', () => {
   test('Evaluates simple expression', () => {
-    const parser = new Parser()
-    const expression = parser.parse("value * 100")
+    const expression = compileExpression("value * 100")
 
     const row = {
       value: 100
@@ -104,8 +103,7 @@ describe('util/evaluateExpression', () => {
   })
 
   test('Performs columnVariable transformations', () => {
-    const parser = new Parser()
-    const expression = parser.parse("myvar")
+    const expression = compileExpression("myvar")
 
     const row = {
       'Some string field name': 100

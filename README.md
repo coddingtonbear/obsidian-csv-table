@@ -70,10 +70,10 @@ Will render a table like:
 
 ### Expressions
 
-This library uses `simple-eval` for expression evaluation;
+This library uses `filtrex` for expression evaluation;
 see their documentation to see more information about the
 expression syntax and what functions are available:
-https://www.npmjs.com/package/expr-eval#expression-syntax
+https://github.com/m93a/filtrex#expressions
 
 ### Selecting particular columns
 
@@ -190,3 +190,7 @@ filter:
 - name == "Colombia"
 ```
 ~~~
+
+Note that the filtering language requires that you use double-quoted
+strings in comparisons -- if you had entered `name == 'Colombia'` above,
+the filter would not have returned results.
