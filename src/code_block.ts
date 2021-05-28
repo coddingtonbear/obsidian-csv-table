@@ -61,29 +61,23 @@ export function getCodeBlockData(
   const columnNames: string[] = []
   const rowColumns: string[] = Object.keys(parsedCsvData[0])
 
-  if (!csvSpec.columns?.length) {
-    for (const key of rowColumns) {
-      columnNames.push(key)
-    }
-  } else {
-    try {
-      for (const column of csvSpec.columns ?? []) {
-        const columnInfo = getColumnInfo(column)
+  try {
+    for (const column of csvSpec.columns ?? rowColumns) {
+      const columnInfo = getColumnInfo(column)
 
-        // Do not attempt to compile/set the expression value
-        // if it already exists in our known row columns
-        if (rowColumns.indexOf(columnInfo.name) === -1) {
-          const expression = compileExpression(columnInfo.expression)
-          for (const row of parsedCsvData) {
-            row[columnInfo.name] = evaluateExpression(row, expression, csvSpec.columnVariables)
-          }
+      // Do not attempt to compile/set the expression value
+      // if it already exists in our known row columns
+      if (rowColumns.indexOf(columnInfo.name) === -1) {
+        const expression = compileExpression(columnInfo.expression)
+        for (const row of parsedCsvData) {
+          row[columnInfo.name] = evaluateExpression(row, expression, csvSpec.columnVariables)
         }
-
-        columnNames.push(columnInfo.name)
       }
-    } catch (e) {
-      throw new Error(`Error evaluating column expressions: ${e.message}.`)
+
+      columnNames.push(columnInfo.name)
     }
+  } catch (e) {
+    throw new Error(`Error evaluating column expressions: ${e.message}.`)
   }
 
   let filteredCsvData: Record<string, any>[] = []
