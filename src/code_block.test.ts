@@ -209,4 +209,39 @@ describe('code_block/getCodeBlockData', () => {
 
     expect(actual).toEqual(expected)
   })
+
+  test('with non-variable-safe column names', () => {
+    const csvData = getCsvString([
+      ['1st', '2nd'],
+      ['alpha', '1'],
+      ['beta', '2'],
+    ])
+    const tableSpec: CsvTableSpec = {
+      source: 'arbitrary.csv',
+      columns: [
+        "1st",
+        "2nd",
+      ]
+    }
+
+    const actual = getCodeBlockData(tableSpec, csvData)
+    const expected: CodeBlockData = {
+      columns: [
+        "1st",
+        "2nd",
+      ],
+      rows: [
+        {
+          "1st": "alpha",
+          "2nd": 1,
+        },
+        {
+          "1st": "beta",
+          "2nd": 2,
+        },
+      ],
+    }
+
+    expect(actual).toEqual(expected)
+  })
 })

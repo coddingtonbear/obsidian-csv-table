@@ -59,21 +59,27 @@ export function getCodeBlockData(
   }
   const parsedCsvData = parseCsv(csvData, csvOptions)
   const columnNames: string[] = []
+  const rowColumns: string[] = Object.keys(parsedCsvData[0])
 
   if (!csvSpec.columns?.length) {
-    for (const key of Object.keys(parsedCsvData[0])) {
+    for (const key of rowColumns) {
       columnNames.push(key)
     }
   } else {
     try {
       for (const column of csvSpec.columns ?? []) {
         const columnInfo = getColumnInfo(column)
-        const expression = compileExpression(columnInfo.expression)
-        columnNames.push(columnInfo.name)
 
-        for (const row of parsedCsvData) {
-          row[columnInfo.name] = evaluateExpression(row, expression, csvSpec.columnVariables)
+        // Do not attempt to compile/set the expression value
+        // if it already exists in our known row columns
+        if (rowColumns.indexOf(columnInfo.name) === -1) {
+          const expression = compileExpression(columnInfo.expression)
+          for (const row of parsedCsvData) {
+            row[columnInfo.name] = evaluateExpression(row, expression, csvSpec.columnVariables)
+          }
         }
+
+        columnNames.push(columnInfo.name)
       }
     } catch (e) {
       throw new Error(`Error evaluating column expressions: ${e.message}.`)
