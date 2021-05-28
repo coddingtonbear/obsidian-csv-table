@@ -14,13 +14,15 @@ Colombia,Bogota,50340000
 Russia,Moscow,144400000
 ```
 
+The following code block:
+
 ~~~
 ```csvtable
 source: countries.csv
 ```
 ~~~
 
-Will render a table like:
+will render a table like:
 
 <table>
     <thead>
@@ -49,19 +51,20 @@ Will render a table like:
     </tbody>
 </table>
 
-## Properties
+## Options
 
-- `source`: Path to the csv file to render within your notes.
+- `source`: (Required) Path to the csv file to render within your notes.
 - `csvOptions`: Options to use for decoding the referenced CSV file;
-  see https://csv.js.org/parse/options/ for available choices.
+  see https://csv.js.org/parse/options/ for available options.
 - `columns`: A list of columns to render. Each item may be either the
-  name of a field to display or an expression, and can be re-named. If unspecified, all columns in the referenced CSV will be
-  rendered. See "Selecting particular columns" below for details.
-- `filter`: A list of filter expressions to use for limiting which
-  rows of the referenced CSV will be displayed.  If unspecified,
-  all rows of the referenced CSV will be rendered taking into account
-  the value specified for `maxRows` below. See "Filtering
-  displayed rows" below for details.
+  name of a field to display or an expression (see "Expressions" below),
+  and can be re-named. If unspecified, all columns in the referenced CSV 
+  will be rendered. See "Selecting particular columns" below for details.
+- `filter`: A list of filter expressions (see "Expressions" below) to
+  use for limiting which rows of the referenced CSV will be displayed.
+  If unspecified, all rows of the referenced CSV will be rendered taking
+  into account the value specified for `maxRows` below. See "Filtering
+  displayed rows" for details.
 - `columnVariables`: A mapping of variable name to column name allowing
   you to set a name for use in `filter` or `columns` above to reference
   the value of a field that is not a valid variable name.
@@ -74,6 +77,9 @@ This library uses `filtrex` for expression evaluation;
 see their documentation to see more information about the
 expression syntax and what functions are available:
 https://github.com/m93a/filtrex#expressions
+
+See "Filtering displayed rows" for an example of a filter expression
+in action, but realistically they work exactly as you'd probably expect.
 
 ### Selecting particular columns
 
