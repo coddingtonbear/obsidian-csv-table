@@ -60,23 +60,23 @@ export function getCodeBlockData(
   const parsedCsvData = parseCsv(csvData, csvOptions)
   const columnNames: string[] = []
 
-  try {
-    for (const column of csvSpec.columns ?? []) {
-      const columnInfo = getColumnInfo(column)
-      const expression = compileExpression(columnInfo.expression)
-      columnNames.push(columnInfo.name)
-
-      for (const row of parsedCsvData) {
-        row[columnInfo.name] = evaluateExpression(row, expression, csvSpec.columnVariables)
-      }
-    }
-  } catch (e) {
-    throw new Error(`Error evaluating column expressions: ${e.message}.`)
-  }
-
-  if (columnNames.length === 0) {
+  if (!csvSpec.columns?.length) {
     for (const key of Object.keys(parsedCsvData[0])) {
       columnNames.push(key)
+    }
+  } else {
+    try {
+      for (const column of csvSpec.columns ?? []) {
+        const columnInfo = getColumnInfo(column)
+        const expression = compileExpression(columnInfo.expression)
+        columnNames.push(columnInfo.name)
+
+        for (const row of parsedCsvData) {
+          row[columnInfo.name] = evaluateExpression(row, expression, csvSpec.columnVariables)
+        }
+      }
+    } catch (e) {
+      throw new Error(`Error evaluating column expressions: ${e.message}.`)
     }
   }
 
