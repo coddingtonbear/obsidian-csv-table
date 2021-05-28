@@ -11,8 +11,6 @@ function renderErrorPre(container: HTMLElement, error: string): HTMLElement {
 
 export default class CsvTablePlugin extends Plugin {
   async onload() {
-    console.log("Loading CSV table plugin");
-
     this.registerMarkdownCodeBlockProcessor("csvtable", async (csvSpecString: string, el, ctx) => {
       try {
         const codeBlockData = await getCodeBlockData(csvSpecString, this.app.vault)
@@ -22,9 +20,5 @@ export default class CsvTablePlugin extends Plugin {
         return
       }
     });
-  }
-
-  onunload() {
-    console.log('Unloading CSV table plugin');
   }
 }
