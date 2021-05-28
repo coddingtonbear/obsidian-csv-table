@@ -1,13 +1,7 @@
 import { Plugin } from 'obsidian';
 
 import { getCodeBlockData } from './code_block';
-import { TableRenderer } from './render'
-
-function renderErrorPre(container: HTMLElement, error: string): HTMLElement {
-  let pre = container.createEl('pre', { cls: ["csv-table", "csv-error"] });
-  pre.appendText(error);
-  return pre;
-}
+import { TableRenderer, renderErrorPre } from './render'
 
 export default class CsvTablePlugin extends Plugin {
   async onload() {

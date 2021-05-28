@@ -38,3 +38,9 @@ export class TableRenderer extends MarkdownRenderChild {
     }
   }
 }
+
+export function renderErrorPre(container: HTMLElement, error: string): HTMLElement {
+  let pre = container.createEl('pre', { cls: ["csv-table", "csv-error"] });
+  pre.appendText(error);
+  return pre;
+}
