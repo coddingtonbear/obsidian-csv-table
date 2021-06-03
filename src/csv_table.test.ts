@@ -1,4 +1,4 @@
-import { getFilteredCsvData, getCsvTableSpec, CsvTableSpec, CsvTableData } from "./csv_table"
+import { getFilteredCsvData, CsvTableSpec, CsvTableData } from "./csv_table"
 
 const SAMPLE_CSV_DATA: string[][] = [
   ["country", "capitol", "population"],
@@ -16,23 +16,6 @@ function getCsvString(data: string[][]): string {
 
   return rows.join('\n')
 }
-
-describe('csv_table/getCsvTableSpec', () => {
-  test('Assert that error is raised if no source specified', () => {
-    const tableSpec = ""
-
-    expect(() => getCsvTableSpec(tableSpec)).toThrow()
-  })
-
-  test('Returns object if object is alright otherwise', () => {
-    const filename = "something.csv"
-    const tableSpec = `source: ${filename}`
-
-    const result = getCsvTableSpec(tableSpec)
-
-    expect(result.source).toEqual(filename)
-  })
-})
 
 describe('csv_table/getCodeBlockData', () => {
   test('basic', () => {

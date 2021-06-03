@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "csv-parse": "^4.15.4",
-    "filtrex": "^2.1.0",
-    "yaml": "^1.10.2"
+    "filtrex": "^2.1.0"
   }
 }

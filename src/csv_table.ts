@@ -1,7 +1,6 @@
 import parseCsv from 'csv-parse/lib/sync'
-import { Options } from 'csv-parse'
-import YAML from 'yaml'
 import { compileExpression } from 'filtrex'
+import { Options } from 'csv-parse'
 
 import { applyRowFilters, getColumnInfo, evaluateExpression } from './util'
 
@@ -22,24 +21,6 @@ export interface CsvTableSpec {
   columnVariables?: Record<string, string>
   filter?: string[] | string
   maxRows?: number
-}
-
-export function getCsvTableSpec(csvSpecString: string): CsvTableSpec {
-  let csvSpec: CsvTableSpec = {
-    source: ''  // Assert that this has a proper value below
-  }
-
-  try {
-    csvSpec = YAML.parse(csvSpecString)
-  } catch (e) {
-    throw new Error(`Could not parse CSV table spec: ${e.message}.`)
-  }
-
-  if (!csvSpec.source) {
-    throw new Error("Parameter 'source' is required.")
-  }
-
-  return csvSpec
 }
 
 export function getFilteredCsvData(
