@@ -1,6 +1,6 @@
 import { compileExpression } from 'filtrex'
 
-import { applyRowFilters, evaluateExpression, getColumnInfo, getCellDisplay, ColumnInfo } from './util'
+import { applyRowFilters, evaluateExpression, getColumnInfo, getCellDisplay, ColumnInfo, sortRows } from './util'
 
 const EXAMPLE_ROWS: Record<string, any>[] = [
   {
@@ -87,6 +87,76 @@ describe('util/applyRowFilters', () => {
 
     // Colombia should be the only result
     expect(finalRows).toEqual([EXAMPLE_ROWS[1]])
+  })
+})
+
+describe("util/sortRows", () => {
+  test("Sorts rows using column name", () => {
+    const result = sortRows(
+      [
+        "population"
+      ],
+      EXAMPLE_ROWS
+    )
+
+    expect(result.map((row) => row.name)).toEqual([
+      "Colombia",
+      "Russia",
+      "United States of America",
+    ])
+  })
+
+  test("Sorts rows when using an expression", () => {
+    const result = sortRows(
+      [
+        "population * 10"
+      ],
+      EXAMPLE_ROWS
+    )
+
+    expect(result.map((row) => row.name)).toEqual([
+      "Colombia",
+      "Russia",
+      "United States of America",
+    ])
+  })
+
+  test("Sorts upon multiple expressions", () => {
+    const result = sortRows(
+      [
+        "numeric",
+        "alpha",
+      ],
+      [
+        {
+          alpha: 'b',
+          numeric: 4
+        },
+        {
+          alpha: 'a',
+          numeric: 10
+        },
+        {
+          alpha: 'a',
+          numeric: 4
+        },
+      ]
+    )
+
+    expect(result).toEqual([
+      {
+        alpha: 'a',
+        numeric: 4
+      },
+      {
+        alpha: 'b',
+        numeric: 4
+      },
+      {
+        alpha: 'a',
+        numeric: 10
+      },
+    ])
   })
 })
 

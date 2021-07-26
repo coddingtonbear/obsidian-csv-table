@@ -2,7 +2,7 @@ import parseCsv from 'csv-parse/lib/sync'
 import { compileExpression } from 'filtrex'
 import { Options } from 'csv-parse'
 
-import { applyRowFilters, getColumnInfo, evaluateExpression } from './util'
+import { applyRowFilters, getColumnInfo, evaluateExpression, sortRows } from './util'
 
 export interface CsvTableData {
   columns: string[],
@@ -21,6 +21,7 @@ export interface CsvTableSpec {
   columnVariables?: Record<string, string>
   filter?: string[] | string
   maxRows?: number
+  sortBy?: string[] | string
 }
 
 export function getFilteredCsvData(
@@ -61,12 +62,16 @@ export function getFilteredCsvData(
     throw new Error(`Error evaluating column expressions: ${e.message}.`)
   }
 
-  let filteredCsvData: Record<string, any>[] = []
+  let filteredSortedCsvData: Record<string, any>[] = []
   try {
-    filteredCsvData = applyRowFilters(
-      csvSpec.filter ? (typeof csvSpec.filter === 'string' ? [csvSpec.filter] : csvSpec.filter) : [],
-      csvSpec.maxRows ?? Infinity,
-      parsedCsvData,
+    filteredSortedCsvData = sortRows(
+      csvSpec.sortBy ? (typeof csvSpec.sortBy === 'string' ? [csvSpec.sortBy] : csvSpec.sortBy) : [],
+      applyRowFilters(
+        csvSpec.filter ? (typeof csvSpec.filter === 'string' ? [csvSpec.filter] : csvSpec.filter) : [],
+        csvSpec.maxRows ?? Infinity,
+        parsedCsvData,
+        csvSpec.columnVariables
+      ),
       csvSpec.columnVariables
     )
   } catch (e) {
@@ -75,6 +80,6 @@ export function getFilteredCsvData(
 
   return {
     columns: columnNames,
-    rows: filteredCsvData
+    rows: filteredSortedCsvData
   }
 }

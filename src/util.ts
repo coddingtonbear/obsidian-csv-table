@@ -38,6 +38,35 @@ export function applyRowFilters(
   return filteredRows
 }
 
+export function sortRows(
+  sortExpressions: string[],
+  rows: Record<string, any>[],
+  columnVariables?: Record<string, string>
+): Record<string, any>[] {
+  const sortedRows: Record<string, any>[] = [...rows]
+  const expressions: ExpressionFn[] = []
+
+  for (const expression of sortExpressions) {
+    expressions.push(compileExpression(expression))
+  }
+
+  for (const sortExpression of expressions.reverse()) {
+    sortedRows.sort((a, b) => {
+      const aResult = evaluateExpression(a, sortExpression, columnVariables)
+      const bResult = evaluateExpression(b, sortExpression, columnVariables)
+
+      if (aResult < bResult) {
+        return -1
+      } else if (aResult > bResult) {
+        return 1
+      } else {
+        return 0
+      }
+    })
+  }
+  return sortedRows
+}
+
 export function evaluateExpression(row: Record<string, any>, expression: ExpressionFn, columnVariables?: Record<string, string>): any {
   const extendedRow: Record<string, any> = { ...row }
 

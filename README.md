@@ -53,22 +53,12 @@ will render a table like:
 ## Options
 
 - `source`: (Required) Path to the csv file to render within your notes.
-- `csvOptions`: Options to use for decoding the referenced CSV file;
-  see https://csv.js.org/parse/options/ for available options.
-- `columns`: A list of columns to render. Each item may be either the
-  name of a field to display or an expression (see "Expressions" below),
-  and can be re-named. If unspecified, all columns in the referenced CSV 
-  will be rendered. See "Selecting particular columns" below for details.
-- `filter`: A list of filter expressions (see "Expressions" below) to
-  use for limiting which rows of the referenced CSV will be displayed.
-  If unspecified, all rows of the referenced CSV will be rendered taking
-  into account the value specified for `maxRows` below. See "Filtering
-  displayed rows" for details.
-- `columnVariables`: A mapping of variable name to column name allowing
-  you to set a name for use in `filter` or `columns` above to reference
-  the value of a field that is not a valid variable name.
-- `maxRows`: The maximum number of rows to display. If unspecified,
-  all unfiltered rows of the referenced CSV will be displayed.
+- `csvOptions`: Options to use for decoding the referenced CSV file; see https://csv.js.org/parse/options/ for available options.
+- `columns`: A list of columns to render. Each item may be either the name of a field to display or an expression (see "Expressions" below), and can be re-named. If unspecified, all columns in the referenced CSV  will be rendered. See "Selecting particular columns" below for details.
+- `filter`: A list of filter expressions (see "Expressions" below) or a single filter expression to use for limiting which rows of the referenced CSV will be displayed. If unspecified, all rows of the referenced CSV will be rendered taking into account the value specified for `maxRows` below. See "Filtering displayed rows" for details.
+- `sortBy`: A list of sort expressions (see "Expressions" below) or a single sort expression to use for sorting the displayed rows.  If unspecified, rows will be displayed in the order they appear in the referenced CSV.
+- `columnVariables`: A mapping of variable name to column name allowing you to set a name for use in `filter` or `columns` above to reference the value of a field that is not a valid variable name.
+- `maxRows`: The maximum number of rows to display. If unspecified, all unfiltered rows of the referenced CSV will be displayed.
 
 ### Expressions
 
