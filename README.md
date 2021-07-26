@@ -1,7 +1,6 @@
 ## Obsidian CSV Table
 
-Have data in a CSV file that you'd like to render as a table in Obsidian
-now you can.
+Have data in a CSV file that you'd like to render as a table in Obsidian? Now you can.
 
 ## Quickstart
 
@@ -73,18 +72,13 @@ will render a table like:
 
 ### Expressions
 
-This library uses `filtrex` for expression evaluation;
-see their documentation to see more information about the
-expression syntax and what functions are available:
-https://github.com/m93a/filtrex#expressions
+This library uses `filtrex` for expression evaluation; see their documentation to see more information about the expression syntax and what functions are available: https://github.com/m93a/filtrex#expressions.
 
-See "Filtering displayed rows" for an example of a filter expression
-in action, but realistically they work exactly as you'd probably expect.
+See "Filtering displayed rows" for an example of a filter expression in action, but realistically they work exactly as you'd probably expect.
 
 ### Selecting particular columns
 
-You can use the `columns` field to control which columns of your CSV
-file to render, e.g:
+You can use the `columns` field to control which columns of your CSV file to render, e.g:
 
 ~~~
 ```csvtable
@@ -118,8 +112,7 @@ source: my_csv_file.csv
     </tbody>
 </table>
 
-It's also possible for you to set better names for your columns or use
-expressions:
+It's also possible for you to set better names for your columns or use expressions:
 
 ~~~
 ```csvtable
@@ -157,8 +150,7 @@ source: my_csv_file.csv
 
 ### Filtering displayed rows
 
-Maybe you would like to display only a subset of the rows of your CSV?
-If so, you can provide a `filter` expression to limit which rows are shown:
+Maybe you would like to display only a subset of the rows of your CSV?  If so, you can provide a `filter` expression to limit which rows are shown:
 
 ~~~
 ```csvtable
@@ -182,11 +174,7 @@ filter: population < 100000000
     </tbody>
 </table>
 
-By default, the parser will attempt to cast the values of each field
-to an integer, boolean, or date object where appropriate for use
-in your filter expressions.
-Also, note that your filter expression can also be provided as a list;
-those expressions will be and-ed together, e.g.:
+By default, the parser will attempt to cast the values of each field to an integer, boolean, or date object where appropriate for use in your filter expressions.  Also, note that your filter expression can also be provided as a list; those expressions will be and-ed together, e.g.:
 
 ~~~
 ```csvtable
@@ -197,6 +185,4 @@ filter:
 ```
 ~~~
 
-Note that the filtering language requires that you use double-quoted
-strings in comparisons -- if you had entered `name == 'Colombia'` above,
-the filter would not have returned results.
+Note that the filtering language requires that you use double-quoted strings in comparisons -- if you had entered `name == 'Colombia'` above, the filter would not have returned results.
