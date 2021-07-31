@@ -1,28 +1,9 @@
 import parseCsv from 'csv-parse/lib/sync'
 import { compileExpression } from 'filtrex'
-import { Options } from 'csv-parse'
+import { CsvTableSpec, CsvTableData, ExtendedSortExpression } from './types'
 
-import { applyRowFilters, getColumnInfo, evaluateExpression, sortRows } from './util'
+import { applyRowFilters, getColumnInfo, evaluateExpression, sortRows, getArrayForArrayOrObject, getSortExpression } from './util'
 
-export interface CsvTableData {
-  columns: string[],
-  rows: Record<string, any>[]
-}
-
-export interface NamedColumn {
-  name: string
-  expression: string
-}
-
-export interface CsvTableSpec {
-  source: string
-  csvOptions?: Options
-  columns?: (NamedColumn | string)[]
-  columnVariables?: Record<string, string>
-  filter?: string[] | string
-  maxRows?: number
-  sortBy?: string[] | string
-}
 
 export function getFilteredCsvData(
   csvSpec: CsvTableSpec,
@@ -65,9 +46,9 @@ export function getFilteredCsvData(
   let filteredSortedCsvData: Record<string, any>[] = []
   try {
     filteredSortedCsvData = sortRows(
-      csvSpec.sortBy ? (typeof csvSpec.sortBy === 'string' ? [csvSpec.sortBy] : csvSpec.sortBy) : [],
+      getArrayForArrayOrObject<string | ExtendedSortExpression>(csvSpec.sortBy).map(getSortExpression),
       applyRowFilters(
-        csvSpec.filter ? (typeof csvSpec.filter === 'string' ? [csvSpec.filter] : csvSpec.filter) : [],
+        getArrayForArrayOrObject<string>(csvSpec.filter),
         csvSpec.maxRows ?? Infinity,
         parsedCsvData,
         csvSpec.columnVariables

@@ -1,6 +1,6 @@
 import { compileExpression } from 'filtrex'
 
-import { applyRowFilters, evaluateExpression, getColumnInfo, getCellDisplay, ColumnInfo, sortRows } from './util'
+import { applyRowFilters, evaluateExpression, getColumnInfo, getCellDisplay, ColumnInfo, sortRows, getSortExpression, getArrayForArrayOrObject } from './util'
 
 const EXAMPLE_ROWS: Record<string, any>[] = [
   {
@@ -94,7 +94,10 @@ describe("util/sortRows", () => {
   test("Sorts rows using column name", () => {
     const result = sortRows(
       [
-        "population"
+        {
+          expression: 'population',
+          reversed: false,
+        }
       ],
       EXAMPLE_ROWS
     )
@@ -106,10 +109,31 @@ describe("util/sortRows", () => {
     ])
   })
 
+  test("Sorts rows using column name, reversed", () => {
+    const result = sortRows(
+      [
+        {
+          expression: 'population',
+          reversed: true,
+        }
+      ],
+      EXAMPLE_ROWS
+    )
+
+    expect(result.map((row) => row.name)).toEqual([
+      "United States of America",
+      "Russia",
+      "Colombia",
+    ])
+  })
+
   test("Sorts rows when using an expression", () => {
     const result = sortRows(
       [
-        "population * 10"
+        {
+          expression: 'population * 10',
+          reversed: false,
+        }
       ],
       EXAMPLE_ROWS
     )
@@ -124,8 +148,14 @@ describe("util/sortRows", () => {
   test("Sorts upon multiple expressions", () => {
     const result = sortRows(
       [
-        "numeric",
-        "alpha",
+        {
+          expression: 'numeric',
+          reversed: false,
+        },
+        {
+          expression: 'alpha',
+          reversed: false,
+        }
       ],
       [
         {
@@ -207,7 +237,6 @@ describe('util/getCellDisplay', () => {
   })
 })
 
-
 describe('util/getColumnInfo', () => {
   test("Parses column having string name", () => {
     const arbitraryColumnName = "my_column"
@@ -227,5 +256,57 @@ describe('util/getColumnInfo', () => {
     const columnInfo = getColumnInfo(providedColumnInfo)
 
     expect(columnInfo).toEqual(providedColumnInfo)
+  })
+})
+
+describe('util/getSortExpression', () => {
+  test("Parses string sort expression", () => {
+    const expression = 'beep'
+    const parsed = getSortExpression(expression)
+
+    expect(parsed).toEqual({
+      expression,
+      reversed: false
+    })
+  })
+
+  test("Parses extended sort expression", () => {
+    const expression = {
+      expression: 'beep',
+      reversed: true,
+    }
+    const parsed = getSortExpression(expression)
+
+    expect(parsed).toEqual(expression)
+  })
+})
+
+describe('util/getArrayForArrayOrObject', () => {
+  test('Returns empty array for null', () => {
+    const value: null = null
+    const actual = getArrayForArrayOrObject<string>(value)
+
+    expect(actual).toEqual([])
+  })
+
+  test('Returns empty array for undefined', () => {
+    const value: undefined = undefined
+    const actual = getArrayForArrayOrObject(value)
+
+    expect(actual).toEqual([])
+  })
+
+  test('Returns original array for array', () => {
+    const value: string[] = ['beep']
+    const actual = getArrayForArrayOrObject<string>(value)
+
+    expect(actual).toEqual(value)
+  })
+
+  test('Returns array of single item if single item', () => {
+    const value: string = 'beep'
+    const actual = getArrayForArrayOrObject<string>(value)
+
+    expect(actual).toEqual([value])
   })
 })

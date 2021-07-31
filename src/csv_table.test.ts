@@ -1,4 +1,5 @@
-import { getFilteredCsvData, CsvTableSpec, CsvTableData } from "./csv_table"
+import { getFilteredCsvData } from "./csv_table"
+import { CsvTableSpec, CsvTableData } from "./types";
 
 const SAMPLE_CSV_DATA: string[][] = [
   ["country", "capitol", "population"],

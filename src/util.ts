@@ -1,4 +1,5 @@
 import { compileExpression } from 'filtrex'
+import { ExtendedSortExpression } from './types'
 
 type ExpressionFn = (item: Record<string, any>) => any
 
@@ -39,7 +40,7 @@ export function applyRowFilters(
 }
 
 export function sortRows(
-  sortExpressions: string[],
+  sortExpressions: ExtendedSortExpression[],
   rows: Record<string, any>[],
   columnVariables?: Record<string, string>
 ): Record<string, any>[] {
@@ -47,18 +48,20 @@ export function sortRows(
   const expressions: ExpressionFn[] = []
 
   for (const expression of sortExpressions) {
-    expressions.push(compileExpression(expression))
+    expressions.push(compileExpression(expression.expression))
   }
 
-  for (const sortExpression of expressions.reverse()) {
+  for (const expression of sortExpressions.reverse()) {
+    const sortExpression = compileExpression(expression.expression)
+
     sortedRows.sort((a, b) => {
       const aResult = evaluateExpression(a, sortExpression, columnVariables)
       const bResult = evaluateExpression(b, sortExpression, columnVariables)
 
       if (aResult < bResult) {
-        return -1
+        return expression.reversed ? 1 : -1
       } else if (aResult > bResult) {
-        return 1
+        return expression.reversed ? -1 : 1
       } else {
         return 0
       }
@@ -99,4 +102,26 @@ export function getColumnInfo(column: string | ColumnInfo): ColumnInfo {
   } else {
     return column
   }
+}
+
+export function getSortExpression(expression: string | ExtendedSortExpression): ExtendedSortExpression {
+  if (typeof expression === 'string') {
+    return {
+      expression: expression,
+      reversed: false
+    }
+  }
+  return expression
+}
+
+export function getArrayForArrayOrObject<T>(value?: T[] | T | null): T[] {
+  if (value === null || value === undefined) {
+    return []
+  }
+
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  return [value]
 }

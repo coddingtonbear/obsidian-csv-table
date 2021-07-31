@@ -2,7 +2,7 @@ import { Plugin, parseYaml } from 'obsidian';
 
 import { getFilteredCsvData } from './csv_table';
 import { TableRenderer, renderErrorPre } from './render'
-import { CsvTableSpec } from './csv_table'
+import { CsvTableSpec } from './types';
 
 export default class CsvTablePlugin extends Plugin {
   async onload() {
