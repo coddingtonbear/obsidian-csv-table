@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-csv-table",
 	"name": "CSV Table",
-	"version": "1.0.3",
+	"version": "1.1.1",
 	"minAppVersion": "0.11.10",
 	"description": "Render CSV data as a table within your notes.",
 	"author": "Adam Coddington <me@adamcoddington.net>",
