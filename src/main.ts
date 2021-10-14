@@ -30,7 +30,6 @@ export default class CsvTablePlugin extends Plugin {
             );
           }
           const csvData = await this.app.vault.cachedRead(file);
-          console.log("Cached read success");
 
           const filteredCsvData = getFilteredCsvData(tableSpec, csvData);
           ctx.addChild(
