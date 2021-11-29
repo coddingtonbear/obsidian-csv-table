@@ -52,7 +52,7 @@ will render a table like:
 
 ## Options
 
-- `source`: (Required) Path to the csv file to render within your notes.
+- `source`: (Required) Path (relative to your vault's root) to the csv file to render within your notes.
 - `csvOptions`: Options to use for decoding the referenced CSV file; see https://csv.js.org/parse/options/ for available options.
 - `columns`: A list of columns to render. Each item may be either the name of a field to display or an expression (see "Expressions" below), and can be re-named. If unspecified, all columns in the referenced CSV  will be rendered. See "Selecting particular columns" below for details.
 - `filter`: A list of filter expressions (see "Expressions" below) or a single filter expression to use for limiting which rows of the referenced CSV will be displayed. If unspecified, all rows of the referenced CSV will be rendered taking into account the value specified for `maxRows` below. See "Filtering displayed rows" for details.
