@@ -1,3 +1,4 @@
+import { formatDate } from "./dates";
 import { compare, compileRowExpression, RowExpression } from "./expression";
 import { CsvRow, ExtendedSortExpression, NamedColumn } from "./types";
 
@@ -26,8 +27,9 @@ export function applyRowFilters(
   return filteredRows;
 }
 
-/** Orders two sort keys as filters compare them; keys that can't be
- * ordered (text against a number, say) are left in place. */
+/** Orders two sort keys as filters compare them. Keys that can't be
+ * ordered (text against a number, say) compare as equal, which, as in
+ * 1.2, leaves their order up to the sort. */
 function compareValues(a: unknown, b: unknown): number {
   const order = compare(a, b);
   return Number.isNaN(order) ? 0 : order;
@@ -80,29 +82,6 @@ export function evaluateExpression(
   }
 
   return expression(extendedRow);
-}
-
-const pad = (n: number, width = 2): string => String(n).padStart(width, "0");
-
-/** A Date as the CSV most likely wrote it: `2021-01-11` for a date at local
- * midnight, otherwise `2021-01-11 08:00` (with seconds when they aren't
- * zero), in local time, which is how `cast_date` read it. */
-export function formatDate(date: Date): string {
-  if (Number.isNaN(date.getTime())) {
-    return "Invalid Date";
-  }
-  const day = `${pad(date.getFullYear(), 4)}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  const [h, m, s, ms] = [
-    date.getHours(),
-    date.getMinutes(),
-    date.getSeconds(),
-    date.getMilliseconds(),
-  ];
-  if (h === 0 && m === 0 && s === 0 && ms === 0) {
-    return day;
-  }
-  const seconds = s === 0 && ms === 0 ? "" : `:${pad(s)}`;
-  return `${day} ${pad(h)}:${pad(m)}${seconds}`;
 }
 
 /** The text shown in a cell: text as it is, a date as `formatDate` writes

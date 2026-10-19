@@ -25,25 +25,36 @@ function toColumnVariables(
   return variables;
 }
 
+/** A column name written as a number (`2020`) is read as text. */
+function toColumnName(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+  return typeof value === "number" ? String(value) : undefined;
+}
+
 /** `{ name }` alone names an existing column, as it did in 1.2. */
 function toNamedColumn(value: unknown): NamedColumn | undefined {
-  if (!isRecord(value) || typeof value.name !== "string") {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const name = toColumnName(value.name);
+  if (name === undefined) {
     return undefined;
   }
   if (value.expression === undefined || value.expression === null) {
-    return { name: value.name, expression: value.name };
+    return { name, expression: name };
   }
-  return typeof value.expression === "string"
-    ? { name: value.name, expression: value.expression }
-    : undefined;
+  const expression = toColumnName(value.expression);
+  return expression === undefined ? undefined : { name, expression };
 }
 
-function isSortExpression(value: unknown): value is ExtendedSortExpression {
-  return (
-    isRecord(value) &&
-    typeof value.expression === "string" &&
-    (value.reversed === undefined || typeof value.reversed === "boolean")
-  );
+/** `reversed` may be written as anything truthy (`yes`, `1`), as 1.2 read it. */
+function toSortExpression(value: unknown): ExtendedSortExpression | undefined {
+  if (!isRecord(value) || typeof value.expression !== "string") {
+    return undefined;
+  }
+  return { expression: value.expression, reversed: Boolean(value.reversed) };
 }
 
 function isListOf<T>(
@@ -100,7 +111,7 @@ export function parseTableSpec(text: string): CsvTableSpec {
   if (columns !== undefined) {
     const named = Array.isArray(columns)
       ? columns.map((item: unknown) =>
-          isString(item) ? item : toNamedColumn(item)
+          isRecord(item) ? toNamedColumn(item) : toColumnName(item)
         )
       : undefined;
     if (named === undefined || named.some((item) => item === undefined)) {
@@ -130,20 +141,27 @@ export function parseTableSpec(text: string): CsvTableSpec {
     spec.filter = filter;
   }
   if (maxRows !== undefined) {
-    if (typeof maxRows !== "number" || !Number.isInteger(maxRows) || maxRows < 0) {
+    // A quoted number (`maxRows: "10"`) worked in 1.2 and still does.
+    const limit =
+      typeof maxRows === "string" && /^\d+$/.test(maxRows)
+        ? Number(maxRows)
+        : maxRows;
+    if (typeof limit !== "number" || !Number.isInteger(limit) || limit < 0) {
       throw new Error("Parameter 'maxRows' must be a whole number.");
     }
-    spec.maxRows = maxRows;
+    spec.maxRows = limit;
   }
   if (sortBy !== undefined) {
-    const isSortItem = (item: unknown): item is string | ExtendedSortExpression =>
-      isString(item) || isSortExpression(item);
-    if (!isSortItem(sortBy) && !isListOf(sortBy, isSortItem)) {
+    const toSortItem = (item: unknown): string | ExtendedSortExpression | undefined =>
+      isString(item) ? item : toSortExpression(item);
+    const items = (Array.isArray(sortBy) ? sortBy : [sortBy]).map(toSortItem);
+    if (items.some((item) => item === undefined)) {
       throw new Error(
         "Parameter 'sortBy' must be an expression, a {expression, reversed} mapping, or a list of them."
       );
     }
-    spec.sortBy = sortBy;
+    const sortItems = items as (string | ExtendedSortExpression)[];
+    spec.sortBy = Array.isArray(sortBy) ? sortItems : sortItems[0];
   }
   return spec;
 }

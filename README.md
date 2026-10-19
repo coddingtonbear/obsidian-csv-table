@@ -68,7 +68,7 @@ See "Filtering displayed rows" for an example of a filter expression in action, 
 
 - `and`, `or` and `not` need true-or-false operands: write `not (population > 100000000)` or `done == true` rather than `not population`.
 - `true` and `false` can be written as-is, e.g. `done == true`.
-- Comparisons and arithmetic coerce the way JavaScript does: a number cell compared with text naming a number (`population == "50340000"`) matches, and a blank cell counts as zero in arithmetic. `in` compares exactly.
+- Comparisons and arithmetic coerce the way JavaScript does: a number cell compared with text naming a number (`population == "50340000"`) matches, and a blank cell counts as zero in `-`, `*`, `/` and `%` (`+` with a blank cell joins text, as in JavaScript). Dividing by zero or multiplying text gives a value that displays as `null` and is neither less nor greater than anything. `in` compares exactly.
 - A date cell (see "Filtering displayed rows") can be compared with another date cell, or with text naming a date: `start >= "2021-10-28"`. Dates and times written without a time zone are read in your local time zone, on both sides of the comparison.
 - A column whose name isn't a valid identifier (letters, digits and underscores, not starting with a digit) can be written in single quotes, as in `'Country Name' == "Colombia"`, or given a usable name with `columnVariables`.
 

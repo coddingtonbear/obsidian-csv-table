@@ -68,6 +68,23 @@ sortBy:
     });
   });
 
+  test("accepts values 1.2 read by coercion", () => {
+    expect(parseTableSpec('source: a.csv\nmaxRows: "10"')).toMatchObject({
+      maxRows: 10,
+    });
+    expect(
+      parseTableSpec("source: a.csv\nsortBy:\n  expression: x\n  reversed: yes")
+    ).toMatchObject({ sortBy: { expression: "x", reversed: true } });
+    expect(
+      parseTableSpec("source: a.csv\nsortBy:\n- expression: x\n  reversed: 0")
+    ).toMatchObject({ sortBy: [{ expression: "x", reversed: false }] });
+    expect(
+      parseTableSpec("source: a.csv\ncolumns:\n- 2020\n- name: 2021\n  expression: 2020")
+    ).toMatchObject({
+      columns: ["2020", { name: "2021", expression: "2020" }],
+    });
+  });
+
   test("accepts numeric column names in columnVariables", () => {
     expect(
       parseTableSpec("source: a.csv\ncolumnVariables:\n  y: 2020\n  first: 0")
@@ -113,8 +130,11 @@ sortBy:
       parseTableSpec("source: a.csv\ncolumns:\n- expression: x")
     ).toThrow(/'columns' must be a list/);
     expect(() =>
-      parseTableSpec("source: a.csv\ncolumns:\n- name: x\n  expression: 1")
+      parseTableSpec("source: a.csv\ncolumns:\n- name: x\n  expression: [1]")
     ).toThrow(/'columns' must be a list/);
+    expect(() => parseTableSpec("source: a.csv\ncolumns:\n- [x]")).toThrow(
+      /'columns' must be a list/
+    );
     expect(() =>
       parseTableSpec("source: a.csv\ncolumnVariables:\n- a")
     ).toThrow(/'columnVariables' must be a mapping/);
@@ -125,6 +145,9 @@ sortBy:
       /'filter' must be an expression/
     );
     expect(() => parseTableSpec("source: a.csv\nmaxRows: ten")).toThrow(
+      /'maxRows' must be a whole number/
+    );
+    expect(() => parseTableSpec("source: a.csv\nmaxRows: 1.5")).toThrow(
       /'maxRows' must be a whole number/
     );
     expect(() => parseTableSpec("source: a.csv\nmaxRows: -1")).toThrow(

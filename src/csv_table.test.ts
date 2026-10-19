@@ -165,9 +165,15 @@ describe("csv_table/getFilteredCsvData", () => {
       rows: [],
     });
     expect(getFilteredCsvData({ source: "a.csv" }, "a,b\n")).toEqual({
-      columns: [],
+      columns: ["a", "b"],
       rows: [],
     });
+    expect(
+      getFilteredCsvData(
+        { source: "a.csv", csvOptions: { columns: ["x", { name: "y" }] } },
+        ""
+      )
+    ).toEqual({ columns: ["x", "y"], rows: [] });
     expect(
       getFilteredCsvData({ source: "a.csv", columns: ["a", "b"] }, "a,b\n")
     ).toEqual({ columns: ["a", "b"], rows: [] });
@@ -237,6 +243,32 @@ describe("csv_table/getFilteredCsvData", () => {
       { a: 1, b: 2 },
       { a: 3, b: 4 },
     ]);
+  });
+
+  test("lets the current csv-parse option name win over the old one", () => {
+    for (const csvOptions of [
+      { relax: false, relax_quotes: true },
+      { relax_quotes: true, relax: false },
+    ]) {
+      expect(
+        getFilteredCsvData({ source: "a.csv", csvOptions }, 'a,b\n1,x"y\n').rows
+      ).toEqual([{ a: 1, b: 'x"y' }]);
+    }
+    expect(
+      getFilteredCsvData(
+        { source: "a.csv", csvOptions: { skip_lines_with_error: true } },
+        'a,b\n1,x"y\n2,3\n'
+      ).rows
+    ).toEqual([{ a: 2, b: 3 }]);
+  });
+
+  test("still reports a broken column expression on a header-only CSV", () => {
+    expect(() =>
+      getFilteredCsvData(
+        { source: "a.csv", columns: ["population /"] },
+        "population\n"
+      )
+    ).toThrow(/Error evaluating column expressions/);
   });
 
   test("renders an empty table for a header-only CSV with named columns", () => {

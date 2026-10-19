@@ -1,32 +1,10 @@
 import { compileExpression } from "filtrex";
 
+import { formatDate, parseDateText } from "./dates";
 import { CsvRow } from "./types";
 
 /** A compiled filtrex expression, evaluated against one row. */
 export type RowExpression = (row: CsvRow) => unknown;
-
-const DATE_ONLY = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
-
-/** Reads text as the instant it names, or `undefined` if it names none.
- *
- * `Date.parse` reads a bare date (`2021-01-11`) as UTC midnight but a
- * date with a time (`2021-01-11 08:00`) in the local time zone, so a
- * filter like `start >= "2021-10-28"` would admit the previous evening's
- * cells west of UTC. Bare dates are read as local midnight instead, so
- * every form is read in the same zone. */
-export function parseDateText(text: string): Date | undefined {
-  const dateOnly = DATE_ONLY.exec(text);
-  if (dateOnly !== null) {
-    const [, year, month, day] = dateOnly;
-    const date = new Date(Number(year), Number(month) - 1, Number(day));
-    return date.getMonth() === Number(month) - 1 &&
-      date.getDate() === Number(day)
-      ? date
-      : undefined;
-  }
-  const time = Date.parse(text);
-  return Number.isNaN(time) ? undefined : new Date(time);
-}
 
 /** When one operand is a Date (csv-parse's `cast_date`) and the other is
  * text naming a date, returns both as Dates so they can be compared;
@@ -69,29 +47,23 @@ function equals(left: unknown, right: unknown): boolean {
   return a == b;
 }
 
-/** filtrex 2 returned `null` for arithmetic that produced no finite number
- * (`population / 0`, `"abc" * 2`, a missing column plus one). */
-function finite(value: number): number | null {
-  if (!Number.isFinite(value)) {
-    return null;
-  }
-  return value === 0 ? 0 : value;
-}
-
 function isTextual(value: unknown): boolean {
   return typeof value === "string" || value instanceof Date;
 }
 
-/** A cell as text, for concatenation and matching. */
+/** A cell as text, for concatenation and matching: a Date as the table
+ * displays it, so `start ~= "^2021"` sees the same text the reader does. */
 function asText(value: unknown): string {
   if (typeof value === "string") {
     return value;
+  }
+  if (value instanceof Date) {
+    return formatDate(value);
   }
   if (
     typeof value === "number" ||
     typeof value === "boolean" ||
     typeof value === "bigint" ||
-    value instanceof Date ||
     value === undefined ||
     value === null
   ) {
@@ -100,23 +72,35 @@ function asText(value: unknown): string {
   return JSON.stringify(value) ?? "";
 }
 
-/** JavaScript's `+`: text concatenation if either side is text (a Date
- * stringifies, as it did), numeric addition otherwise. */
+/** JavaScript's `+`: text concatenation if either side is text, numeric
+ * addition otherwise. Arithmetic returns JavaScript's results, as filtrex
+ * 2 did: `"abc" * 2` is NaN and `n / 0` is Infinity; both display as
+ * `null`, and neither is less than or greater than anything. */
 function add(a: unknown, b: unknown): unknown {
   if (isTextual(a) || isTextual(b)) {
     return asText(a) + asText(b);
   }
-  return finite(Number(a) + Number(b));
+  return Number(a) + Number(b);
+}
+
+/** filtrex calls `-` with one argument for negation and two for
+ * subtraction; the count is what tells them apart, since a missing
+ * column's value is `undefined`. */
+function subtract(...args: unknown[]): number {
+  return args.length === 1
+    ? -Number(args[0])
+    : Number(args[0]) - Number(args[1]);
 }
 
 const operators = {
   "+": add,
-  "-": (a: unknown, b?: unknown) =>
-    b === undefined ? finite(-Number(a)) : finite(Number(a) - Number(b)),
-  "*": (a: unknown, b: unknown) => finite(Number(a) * Number(b)),
-  "/": (a: unknown, b: unknown) => finite(Number(a) / Number(b)),
-  "%": (a: unknown, b: unknown) => finite(Number(a) % Number(b)),
-  "^": (a: unknown, b: unknown) => finite(Number(a) ** Number(b)),
+  "-": subtract,
+  "*": (a: unknown, b: unknown) => Number(a) * Number(b),
+  "/": (a: unknown, b: unknown) => Number(a) / Number(b),
+  // filtrex compiles both `a % b` and `a mod b` to `mod`; JavaScript's
+  // remainder keeps the sign of the left operand, as filtrex 2 did.
+  mod: (a: unknown, b: unknown) => Number(a) % Number(b),
+  "^": (a: unknown, b: unknown) => Number(a) ** Number(b),
   "==": equals,
   "!=": (a: unknown, b: unknown) => !equals(a, b),
   "<": (a: unknown, b: unknown) => compare(a, b) < 0,
@@ -126,7 +110,11 @@ const operators = {
   // filtrex 3 only matches text against text; cast cells are often
   // numbers (`zip ~= "^9"`), so both sides are read as text.
   "~=": (a: unknown, b: unknown) =>
-    a !== undefined && a !== null && new RegExp(asText(b)).test(asText(a)),
+    a !== undefined &&
+    a !== null &&
+    b !== undefined &&
+    b !== null &&
+    new RegExp(asText(b)).test(asText(a)),
 };
 
 /** Reads a property, treating one the row lacks as `undefined` rather than

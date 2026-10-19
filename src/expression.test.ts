@@ -60,24 +60,30 @@ describe("expression/compileRowExpression", () => {
   });
 
   test("applies JavaScript's arithmetic coercions, as filtrex 2 did", () => {
-    const row = { n: 5, s: "abc", e: "", z: 90210, d: new Date(2021, 0, 1) };
+    const row = { n: 5, s: "abc", e: "", z: 90210, d: new Date(2021, 0, 1), neg: -3 };
     expect(evaluate("e * 2", row)).toBe(0);
-    expect(evaluate("missing * 2", row)).toBe(null);
-    expect(evaluate("s * 2", row)).toBe(null);
-    expect(evaluate("-s", row)).toBe(null);
-    expect(evaluate("-e", row)).toBe(0);
+    expect(evaluate("missing * 2", row)).toBeNaN();
+    expect(evaluate("s * 2", row)).toBeNaN();
+    expect(evaluate("-s", row)).toBeNaN();
+    expect(evaluate("-e", row)).toBe(-0); // JavaScript's -"" is -0
     expect(evaluate("n % 2", row)).toBe(1);
+    expect(evaluate("n mod 2", row)).toBe(1);
+    expect(evaluate("e % 2", row)).toBe(0);
+    expect(evaluate("neg % 2", row)).toBe(-1);
+    expect(evaluate("missing % 2", row)).toBeNaN();
     expect(evaluate("n ^ 2", row)).toBe(25);
-    expect(evaluate("n / 0", row)).toBe(null);
-    expect(evaluate("0 / 0", row)).toBe(null);
+    expect(evaluate("n / 0", row)).toBe(Infinity);
+    expect(evaluate("0 / 0", row)).toBeNaN();
     expect(evaluate("e + 1", row)).toBe("1");
-    expect(evaluate("missing + 1", row)).toBe(null);
+    expect(evaluate("missing + 1", row)).toBeNaN();
     expect(evaluate("s + 1", row)).toBe("abc1");
     expect(evaluate("n + e", row)).toBe("5");
     expect(evaluate("n - e", row)).toBe(5);
-    expect(evaluate("s - 1", row)).toBe(null);
+    expect(evaluate("s - 1", row)).toBeNaN();
+    expect(evaluate("n - missing", row)).toBeNaN();
+    expect(evaluate("missing - n", row)).toBeNaN();
     expect(evaluate("d * 1", row)).toBe(row.d.getTime());
-    expect(evaluate("d + 1", row)).toBe(String(row.d) + "1");
+    expect(evaluate("d + 1", row)).toBe("2021-01-011");
     expect(evaluate('n * "2"', row)).toBe(10);
     expect(evaluate('"3" * "2"', row)).toBe(6);
     expect(evaluate('"3" + 2', row)).toBe("32");
@@ -85,14 +91,25 @@ describe("expression/compileRowExpression", () => {
     expect(evaluate("e / 1000000", row)).toBe(0);
   });
 
+  test("compares NaN and Infinity as JavaScript does", () => {
+    const row = { n: 5, area: "" };
+    expect(evaluate("n / area > 1000", row)).toBe(true);
+    expect(evaluate("(missing * 2) < 1", row)).toBe(false);
+    expect(evaluate("(missing * 2) >= 1", row)).toBe(false);
+    expect(evaluate("(missing * 2) == 0", row)).toBe(false);
+  });
+
   test("matches ~= against numbers and missing columns, as filtrex 2 did", () => {
-    const row = { z: 90210, t: "9x", e: "" };
+    const row = { z: 90210, t: "9x", e: "", d: new Date(2021, 0, 11) };
     expect(evaluate('z ~= "^9"', row)).toBe(true);
     expect(evaluate('t ~= "^9"', row)).toBe(true);
     expect(evaluate('e ~= "^$"', row)).toBe(true);
     expect(evaluate('missing ~= "x"', row)).toBe(false);
+    expect(evaluate("t ~= missing", row)).toBe(false);
     expect(evaluate("z ~= 5", row)).toBe(false);
     expect(evaluate("z ~= 9", row)).toBe(true);
+    expect(evaluate('d ~= "^2021-01"', row)).toBe(true);
+    expect(() => evaluate('t ~= "("', row)).toThrow();
   });
 
   test("never matches a comparison involving a value with no number", () => {

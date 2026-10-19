@@ -5,7 +5,8 @@ import type {
 } from "csv-parse";
 import { parse as parseCsv } from "csv-parse/sync";
 
-import { compileRowExpression, errorMessage, parseDateText } from "./expression";
+import { parseDateText } from "./dates";
+import { compileRowExpression, errorMessage } from "./expression";
 import { CsvRow, CsvTableData, CsvTableSpec, ExtendedSortExpression } from "./types";
 import {
   applyRowFilters,
@@ -53,7 +54,8 @@ function castDate(value: string, context: InfoField): Date | string {
 }
 
 /** csv-parse 5 renamed these options; blocks written for csv-parse 4 (this
- * plugin until 1.2) keep working. csv-parse ignores names it doesn't know. */
+ * plugin until 1.2) keep working. csv-parse ignores names it doesn't know.
+ * When a block gives both names, the current one wins. */
 const RENAMED_CSV_OPTIONS: Record<string, string> = {
   relax: "relax_quotes",
   skip_lines_with_empty_values: "skip_records_with_empty_values",
@@ -61,15 +63,54 @@ const RENAMED_CSV_OPTIONS: Record<string, string> = {
 };
 
 function renameCsvOptions(options: CsvParseOptions): CsvParseOptions {
-  return Object.fromEntries(
-    Object.entries(options).map(([name, value]: [string, unknown]) => [
-      RENAMED_CSV_OPTIONS[name] ?? name,
-      value,
-    ])
-  );
+  const renamed: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(options) as [string, unknown][]) {
+    const newName = RENAMED_CSV_OPTIONS[name];
+    if (newName === undefined) {
+      renamed[name] = value;
+    } else if (!(newName in options)) {
+      renamed[newName] = value;
+    }
+  }
+  return renamed;
 }
 
-function parseRows(csvData: string, csvSpec: CsvTableSpec): CsvRow[] {
+interface ParsedCsv {
+  rows: CsvRow[];
+  /** The names rows are keyed by, known even when there are no rows. */
+  columns: string[];
+}
+
+/** The column names a header-only file would have keyed its rows by: the
+ * header line when csv-parse is reading it (`columns: true`), or the names
+ * given in a `columns` list. */
+function parseHeaderColumns(csvData: string, options: CsvParseOptions): string[] {
+  if (options.columns === true) {
+    const records: unknown = parseCsv(csvData, {
+      ...options,
+      columns: false,
+      cast: false,
+      cast_date: false,
+      to: 1,
+    });
+    const header: unknown = Array.isArray(records) ? records[0] : undefined;
+    return Array.isArray(header) ? header.map(String) : [];
+  }
+  if (Array.isArray(options.columns)) {
+    return options.columns.flatMap((column: unknown) => {
+      if (typeof column === "string") {
+        return [column];
+      }
+      if (typeof column === "object" && column !== null && "name" in column) {
+        return typeof column.name === "string" ? [column.name] : [];
+      }
+      return [];
+    });
+  }
+  return [];
+}
+
+function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
   const {
     cast = true,
     cast_date = castDate as CastingDateFunction,
@@ -79,8 +120,7 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): CsvRow[] {
     bom = true,
     ...extraOptions
   } = renameCsvOptions(csvSpec.csvOptions ?? {});
-  // csv-parse's sync `parse` is typed as returning `any`.
-  const records: unknown = parseCsv(csvData, {
+  const options: CsvParseOptions = {
     cast,
     cast_date,
     trim,
@@ -88,30 +128,39 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): CsvRow[] {
     skip_empty_lines,
     bom,
     ...extraOptions,
-  });
+  };
+  // csv-parse's sync `parse` is typed as returning `any`.
+  const records: unknown = parseCsv(csvData, options);
   if (!Array.isArray(records)) {
     throw new Error("Expected the CSV parser to return a list of records.");
   }
-  return records.map(toRow);
+  const rows = records.map(toRow);
+  return {
+    rows,
+    columns:
+      rows.length > 0
+        ? Object.keys(rows[0])
+        : parseHeaderColumns(csvData, options),
+  };
 }
 
 export function getFilteredCsvData(
   csvSpec: CsvTableSpec,
   csvData: string
 ): CsvTableData {
-  const parsedCsvData = parseRows(csvData, csvSpec);
+  const { rows: parsedCsvData, columns: rowColumns } = parseRows(
+    csvData,
+    csvSpec
+  );
   const columnNames: string[] = [];
-  const rowColumns: string[] =
-    parsedCsvData.length > 0 ? Object.keys(parsedCsvData[0]) : [];
 
   try {
     for (const column of csvSpec.columns ?? rowColumns) {
       const columnInfo = getColumnInfo(column);
 
-      // Do not attempt to compile/set the expression value if it already
-      // exists in our known row columns (or there are no rows to know
-      // the columns from).
-      if (parsedCsvData.length > 0 && !rowColumns.includes(columnInfo.name)) {
+      // Do not attempt to compile/set the expression value
+      // if it already exists in our known row columns
+      if (!rowColumns.includes(columnInfo.name)) {
         const expression = compileRowExpression(columnInfo.expression);
         for (const row of parsedCsvData) {
           row[columnInfo.name] = evaluateExpression(

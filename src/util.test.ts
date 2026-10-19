@@ -5,7 +5,6 @@ import { CsvRow, NamedColumn } from "./types";
 import {
   applyRowFilters,
   evaluateExpression,
-  formatDate,
   getColumnInfo,
   getCellDisplay,
   sortRows,
@@ -314,19 +313,6 @@ describe("util/getCellDisplay", () => {
   });
 });
 
-describe("util/formatDate", () => {
-  test("writes local dates and times", () => {
-    expect(formatDate(new Date(2021, 0, 11))).toEqual("2021-01-11");
-    expect(formatDate(new Date(2021, 11, 1, 8, 5))).toEqual("2021-12-01 08:05");
-    expect(formatDate(new Date(2021, 0, 11, 8, 0, 30))).toEqual(
-      "2021-01-11 08:00:30"
-    );
-    expect(formatDate(new Date(2021, 0, 11, 0, 0, 0, 5))).toEqual(
-      "2021-01-11 00:00:00"
-    );
-    expect(formatDate(new Date(NaN))).toEqual("Invalid Date");
-  });
-});
 
 describe("util/getColumnInfo", () => {
   test("Parses column having string name", () => {
