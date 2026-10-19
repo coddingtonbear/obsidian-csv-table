@@ -17,7 +17,7 @@ export class TableRenderer extends MarkdownRenderChild {
   }
 
   render(): void {
-    const tableEl = this.container.createEl("table");
+    const tableEl = this.container.createEl("table", { cls: "csv-table" });
 
     const theadEl = tableEl.createEl("thead");
     const headerEl = theadEl.createEl("tr");

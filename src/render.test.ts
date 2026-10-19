@@ -16,7 +16,8 @@ describe("render/TableRenderer", () => {
     );
     renderer.load();
 
-    expect(container.querySelector("table")).not.toBeNull();
+    const table = container.querySelector("table");
+    expect(table?.classList.contains("csv-table")).toBe(true);
     expect(
       Array.from(container.querySelectorAll("thead th")).map(
         (th) => th.textContent
