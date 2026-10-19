@@ -1,6 +1,14 @@
+import { normalizePath } from "obsidian";
+
 import { formatDate } from "./dates";
 import { compare, compileRowExpression, RowExpression } from "./expression";
 import { CsvRow, ExtendedSortExpression, NamedColumn } from "./types";
+
+/** A `source` path as the vault knows it. Obsidian's `normalizePath` fixes
+ * separators and leading or trailing slashes but leaves `./` alone. */
+export function normalizeSourcePath(source: string): string {
+  return normalizePath(source).replace(/^(\.\/)+/, "");
+}
 
 /** Returns the rows passing every filter, in their original order. */
 export function applyRowFilters(

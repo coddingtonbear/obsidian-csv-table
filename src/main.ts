@@ -1,9 +1,10 @@
-import { Plugin, normalizePath } from "obsidian";
+import { Plugin } from "obsidian";
 
 import { getFilteredCsvData } from "./csv_table";
 import { errorMessage } from "./expression";
 import { TableRenderer, renderErrorPre } from "./render";
 import { parseTableSpec } from "./spec";
+import { normalizeSourcePath } from "./util";
 
 export default class CsvTablePlugin extends Plugin {
   onload(): void {
@@ -13,10 +14,8 @@ export default class CsvTablePlugin extends Plugin {
         try {
           const tableSpec = parseTableSpec(csvSpecString);
 
-          // normalizePath fixes separators and a leading slash, but not
-          // a leading "./".
           const file = this.app.vault.getFileByPath(
-            normalizePath(tableSpec.source.replace(/^\.\//, ""))
+            normalizeSourcePath(tableSpec.source)
           );
           if (file === null) {
             throw new Error(

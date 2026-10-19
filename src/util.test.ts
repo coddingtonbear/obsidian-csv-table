@@ -3,6 +3,7 @@ import { describe, test, expect } from "vitest";
 import { compileRowExpression } from "./expression";
 import { CsvRow, NamedColumn } from "./types";
 import {
+  normalizeSourcePath,
   applyRowFilters,
   evaluateExpression,
   getColumnInfo,
@@ -29,6 +30,22 @@ const EXAMPLE_ROWS: CsvRow[] = [
     population: 144400000,
   },
 ];
+
+describe("util/normalizeSourcePath", () => {
+  test("resolves the forms a note might write", () => {
+    for (const source of [
+      "data/a.csv",
+      "./data/a.csv",
+      "/data/a.csv",
+      "/./data/a.csv",
+      "././data/a.csv",
+      ".\\data\\a.csv",
+      "data//a.csv",
+    ]) {
+      expect(normalizeSourcePath(source)).toEqual("data/a.csv");
+    }
+  });
+});
 
 describe("util/applyRowFilters", () => {
   test("If no filters, all rows are returned", () => {

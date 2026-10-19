@@ -406,10 +406,16 @@ describe("csv_table/getFilteredCsvData", () => {
     // Given both spellings, the later one wins, as in csv-parse.
     expect(
       getFilteredCsvData(
-        { source: "a.csv", csvOptions: { cast: false, castDate: true, cast_date: false } },
+        { source: "a.csv", csvOptions: { castDate: true, cast_date: false } },
         "d\n2021-01-11\n"
       ).rows
     ).toEqual([{ d: "2021-01-11" }]);
+    expect(
+      getFilteredCsvData(
+        { source: "a.csv", csvOptions: { cast_date: false, castDate: true } },
+        "d\n2021-01-11\n"
+      ).rows
+    ).toEqual([{ d: new Date(2021, 0, 11) }]);
   });
 
   test("casts the first line too when there is no header", () => {

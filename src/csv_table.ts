@@ -121,7 +121,6 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
     return line;
   };
 
-
   const options: CsvParseOptions = {
     cast,
     trim,

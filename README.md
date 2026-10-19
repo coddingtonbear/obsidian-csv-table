@@ -180,7 +180,7 @@ filter: start >= "2021-10-28"
 ```
 ~~~
 
-If you set `cast_date: true` in `csvOptions`, every cell JavaScript can read as a date becomes one (including text like "March 5" or "meeting 5", so use it on files you know; the header line is left alone, and `cast` must stay on). A date cell is displayed as `2021-01-11`, or `2021-01-11 08:00` when it has a time (with seconds when they aren't zero), in your local time zone, and compares with text naming a date, as described under "Expressions".
+If you set `cast_date: true` in `csvOptions`, every cell JavaScript can read as a date becomes one (including text like "March 5" or "meeting 5", so use it on files you know; the header line is left alone, and `cast` must stay on). A date cell is displayed as `2021-01-11`, or `2021-01-11 08:00` when it has a time (with seconds, and milliseconds, when they aren't zero), in your local time zone, and compares with text naming a date, as described under "Expressions".
 
 Also, note that your filter expression can also be provided as a list; those expressions will be and-ed together, e.g.:
 
