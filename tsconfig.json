@@ -4,21 +4,17 @@
     "inlineSourceMap": true,
     "inlineSources": true,
     "module": "ESNext",
-    "target": "es6",
+    "target": "ES2022",
     "allowJs": true,
     "noImplicitAny": true,
-    "moduleResolution": "node",
-    "importHelpers": true,
-    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
-    "lib": [
-      "dom",
-      "es5",
-      "scripthost",
-      "es2015"
-    ]
+    "importHelpers": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": ["DOM", "ES2022"]
   },
-  "include": [
-    "**/*.ts"
-  ]
+  "include": ["**/*.ts"],
+  "exclude": ["**/*.test.ts", "node_modules", "mocks", "vitest.*", ".worktrees"]
 }
