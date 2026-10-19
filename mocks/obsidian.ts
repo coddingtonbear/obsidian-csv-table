@@ -34,6 +34,12 @@ export class MarkdownRenderChild extends Component {
 
 export class Plugin extends Component {}
 
+// The app's implementation collapses separators and strips leading and
+// trailing slashes; this mirrors what the plugin relies on.
+export function normalizePath(path: string): string {
+  return path.replace(/\\/g, "/").replace(/\/+/g, "/").replace(/^\/|\/$/g, "");
+}
+
 // Obsidian adds DOM helpers to every element; tests running in a jsdom
 // environment get the subset this plugin uses.
 type ElementInfo = { cls?: string | string[]; text?: string };

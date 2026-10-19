@@ -383,10 +383,10 @@ describe("csv_table/getFilteredCsvData", () => {
       const actual = getFilteredCsvData(
         {
           source: "a.csv",
-          csvOptions: { castDate: true, skipEmptyLines: false },
+          csvOptions: { castDate: true, skipLinesWithError: true },
           filter: 'd == "2021-01-11"',
         },
-        "Jan 2021,d\nx,2021-01-11\n"
+        'Jan 2021,d\nx,2021-01-11\nbroken,"a"b\n'
       );
       expect(actual.columns).toEqual(["Jan 2021", "d"]);
       expect(actual.rows).toEqual([{ "Jan 2021": "x", d: new Date(2021, 0, 11) }]);
@@ -403,6 +403,21 @@ describe("csv_table/getFilteredCsvData", () => {
         'a,b\n1,x"y\n'
       ).rows
     ).toEqual([{ a: 1, b: 'x"y' }]);
+    // Given both spellings, the later one wins, as in csv-parse.
+    expect(
+      getFilteredCsvData(
+        { source: "a.csv", csvOptions: { cast: false, castDate: true, cast_date: false } },
+        "d\n2021-01-11\n"
+      ).rows
+    ).toEqual([{ d: "2021-01-11" }]);
+  });
+
+  test("casts the first line too when there is no header", () => {
+    const actual = getFilteredCsvData(
+      { source: "a.csv", csvOptions: { columns: false, cast_date: true } },
+      "2021-01-11\n"
+    );
+    expect(actual.rows).toEqual([{ "0": new Date(2021, 0, 11) }]);
   });
 
   test("treats a quoted number as a constant and a bare one as a column", () => {

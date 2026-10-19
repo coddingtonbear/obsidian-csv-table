@@ -1,4 +1,8 @@
-import type { CastingDateFunction, Options as CsvParseOptions } from "csv-parse";
+import type {
+  CastingDateFunction,
+  InfoField,
+  Options as CsvParseOptions,
+} from "csv-parse";
 import { parse as parseCsv } from "csv-parse/sync";
 
 import { parseDateText } from "./dates";
@@ -80,6 +84,19 @@ function listedColumns(columns: unknown[]): string[] {
   });
 }
 
+/** What `cast_date: true` means here: csv-parse's own reads a bare date as
+ * UTC midnight, while filters and display read dates in local time, so a
+ * cell `2021-10-28` would neither equal nor display as `2021-10-28`. This
+ * reads every form the same way (`parseDateText`). The header line, which
+ * csv-parse casts too, is left alone (csv-parse flags its cells with
+ * `header`, for `columns: true` and for the function that replaces it).
+ * Like csv-parse's own implementation, this returns the text untouched
+ * when it isn't a date; csv-parse's `CastingDateFunction` type says `Date`
+ * only, hence the assertion where it's used. */
+function castDate(value: string, context: InfoField): Date | string {
+  return context.header ? value : (parseDateText(value) ?? value);
+}
+
 function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
   const {
     cast = true,
@@ -104,18 +121,6 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
     return line;
   };
 
-  // What `cast_date: true` means here: csv-parse's own reads a bare date as
-  // UTC midnight, while filters and display read dates in local time, so a
-  // cell `2021-10-28` would neither equal nor display as `2021-10-28`. This
-  // reads every form the same way (`parseDateText`). The header line, which
-  // csv-parse casts too, is left alone: its cells are cast before
-  // `readHeader` is called. Like csv-parse's own implementation, this
-  // returns the text untouched when it isn't a date; csv-parse's
-  // `CastingDateFunction` type says `Date` only, hence the assertion.
-  const castDate = (value: string): Date | string =>
-    columns === true && header === undefined
-      ? value
-      : (parseDateText(value) ?? value);
 
   const options: CsvParseOptions = {
     cast,

@@ -28,8 +28,10 @@ describe("dates/parseDateText", () => {
     expect(parseDateText("2021-01-11 08:00:00.5")).toEqual(
       new Date(2021, 0, 11, 8, 0, 0, 500)
     );
-    expect(parseDateText("2021-01-11 24:00")).toBeUndefined();
     expect(parseDateText("2021-01-11 08:60")).toBeUndefined();
+    expect(parseDateText("2021-01-11 25:00")).toBeUndefined();
+    // Date.parse reads 24:00 as the end of the day.
+    expect(parseDateText("2021-01-11T24:00")).toEqual(new Date(2021, 0, 12));
   });
 
   test("reads other forms through Date.parse", () => {

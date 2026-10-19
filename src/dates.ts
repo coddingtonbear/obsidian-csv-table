@@ -29,7 +29,9 @@ export function parseDateText(text: string): Date | undefined {
       local[6] === undefined ? 0 : Number(local[6]),
       local[7] === undefined ? 0 : Number(local[7].padEnd(3, "0")),
     ];
-    if (hours > 23 || minutes > 59 || seconds > 59) {
+    // `24:00` is the end of the day, as ECMAScript's date format allows.
+    const endOfDay = hours === 24 && minutes === 0 && seconds === 0 && fraction === 0;
+    if ((hours > 23 && !endOfDay) || minutes > 59 || seconds > 59) {
       return undefined;
     }
     const date = new Date(year, month - 1, day, hours, minutes, seconds, fraction);
@@ -37,7 +39,8 @@ export function parseDateText(text: string): Date | undefined {
       // The constructor reads years 0–99 as 1900–1999.
       date.setFullYear(year);
     }
-    return date.getMonth() === month - 1 && date.getDate() === day
+    const checked = endOfDay ? new Date(date.getTime() - 1) : date;
+    return checked.getMonth() === month - 1 && checked.getDate() === day
       ? date
       : undefined;
   }

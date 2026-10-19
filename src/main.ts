@@ -13,8 +13,10 @@ export default class CsvTablePlugin extends Plugin {
         try {
           const tableSpec = parseTableSpec(csvSpecString);
 
+          // normalizePath fixes separators and a leading slash, but not
+          // a leading "./".
           const file = this.app.vault.getFileByPath(
-            normalizePath(tableSpec.source)
+            normalizePath(tableSpec.source.replace(/^\.\//, ""))
           );
           if (file === null) {
             throw new Error(
