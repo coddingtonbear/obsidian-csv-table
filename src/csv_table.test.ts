@@ -179,6 +179,54 @@ describe("csv_table/getFilteredCsvData", () => {
     expect(actual.rows).toEqual([{ a: 1, b: 2 }]);
   });
 
+  test("casts dates so filters can compare them", () => {
+    const csvData = getCsvString([
+      ["Subject", "start"],
+      ["meeting 1", "2021-01-11 08:00"],
+      ["meeting 5", "2021-10-28 12:00"],
+    ]);
+    const actual = getFilteredCsvData(
+      { source: "a.csv", filter: 'start >= "2021-10-28"' },
+      csvData
+    );
+    expect(actual.rows.map((row) => row.Subject)).toEqual(["meeting 5"]);
+    expect(actual.rows[0].start).toBeInstanceOf(Date);
+  });
+
+  test("casts only cells that look like dates", () => {
+    const actual = getFilteredCsvData(
+      { source: "a.csv" },
+      getCsvString([
+        ["text", "iso", "us", "dotted", "2021-01-01"],
+        ["meeting 5", "2021-01-11", "01/11/2021", "11.01.2021", "March"],
+        ["1 Jan", "2021-01-11T08:00:00Z", "1/2", "Room 2", "x"],
+      ])
+    );
+    expect(actual.columns).toEqual(["text", "iso", "us", "dotted", "2021-01-01"]);
+    const [first, second] = actual.rows;
+    expect(first.text).toBe("meeting 5");
+    expect(first.iso).toEqual(new Date("2021-01-11"));
+    expect(first.us).toEqual(new Date("01/11/2021"));
+    expect(first.dotted).toBeInstanceOf(Date);
+    expect(first["2021-01-01"]).toBe("March");
+    expect(second.text).toBe("1 Jan");
+    expect(second.iso).toEqual(new Date("2021-01-11T08:00:00Z"));
+    expect(second.us).toBeInstanceOf(Date);
+    expect(second.dotted).toBe("Room 2");
+  });
+
+  test("lets csvOptions choose csv-parse's own date casting", () => {
+    const csv = "a\nmeeting 5\n";
+    expect(
+      getFilteredCsvData({ source: "a.csv", csvOptions: { cast_date: true } }, csv)
+        .rows[0].a
+    ).toBeInstanceOf(Date);
+    expect(
+      getFilteredCsvData({ source: "a.csv", csvOptions: { cast_date: false } }, "a\n2021-01-11\n")
+        .rows[0].a
+    ).toBe("2021-01-11");
+  });
+
   test("passes csvOptions through to the parser", () => {
     const actual = getFilteredCsvData(
       { source: "a.csv", csvOptions: { delimiter: ";", cast: false } },

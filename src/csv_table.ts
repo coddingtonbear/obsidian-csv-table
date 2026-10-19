@@ -1,3 +1,4 @@
+import type { CastingDateFunction, InfoField } from "csv-parse";
 import { parse as parseCsv } from "csv-parse/sync";
 
 import { compileRowExpression, errorMessage } from "./expression";
@@ -26,10 +27,30 @@ function toRow(record: unknown): CsvRow {
   throw new Error(`Unexpected CSV record: ${JSON.stringify(record)}`);
 }
 
+/** A cell that starts like a calendar date: digits, a separator, and more
+ * digits, as in 2021-01-11, 01/11/2021 or 11.01.2021. */
+const DATE_LIKE = /^\d{1,4}[-/.]\d/;
+
+/** The default `cast_date`. csv-parse's own (`cast_date: true`) hands every
+ * non-numeric cell to `Date.parse`, which reads text such as "meeting 5" or
+ * "March" as a date; this casts only cells that look like one. Column names
+ * (`context.header`) stay text.
+ *
+ * Like csv-parse's own implementation, this returns the text untouched when
+ * it isn't a date; csv-parse's `CastingDateFunction` type says `Date` only,
+ * hence the assertion where it's used. */
+function castDate(value: string, context: InfoField): Date | string {
+  if (context.header || !DATE_LIKE.test(value)) {
+    return value;
+  }
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? value : new Date(time);
+}
+
 function parseRows(csvData: string, csvSpec: CsvTableSpec): CsvRow[] {
   const {
     cast = true,
-    cast_date = true,
+    cast_date = castDate as CastingDateFunction,
     trim = true,
     columns = true,
     skip_empty_lines = true,
