@@ -1,6 +1,11 @@
-import type { Options as CsvParseOptions } from "csv-parse";
+import type {
+  CastingDateFunction,
+  InfoField,
+  Options as CsvParseOptions,
+} from "csv-parse";
 import { parse as parseCsv } from "csv-parse/sync";
 
+import { parseDateText } from "./dates";
 import { compileRowExpression, errorMessage } from "./expression";
 import { CsvRow, CsvTableData, CsvTableSpec, ExtendedSortExpression } from "./types";
 import {
@@ -34,6 +39,7 @@ const RENAMED_CSV_OPTIONS: Record<string, string> = {
   relax: "relax_quotes",
   skip_lines_with_empty_values: "skip_records_with_empty_values",
   skip_lines_with_error: "skip_records_with_error",
+  columns_duplicates_to_array: "group_columns_by_name",
 };
 
 function renameCsvOptions(options: CsvParseOptions): CsvParseOptions {
@@ -55,6 +61,19 @@ interface ParsedCsv {
   columns: string[];
 }
 
+/** What `cast_date: true` means here: csv-parse's own reads a bare date as
+ * UTC midnight, while filters and display read dates in local time, so a
+ * cell `2021-10-28` would neither equal nor display as `2021-10-28`. This
+ * reads every form the same way (`parseDateText`), and leaves the header
+ * line alone, which csv-parse would otherwise cast too.
+ *
+ * Like csv-parse's own implementation, this returns the text untouched when
+ * it isn't a date; csv-parse's `CastingDateFunction` type says `Date` only,
+ * hence the assertion where it's used. */
+function castDate(value: string, context: InfoField): Date | string {
+  return context.header ? value : (parseDateText(value) ?? value);
+}
+
 /** The column names csv-parse keys rows by: the header line when it is
  * reading one (`columns: true`), or the names given in a `columns` list.
  * Read from the header rather than from the first row, which under
@@ -62,11 +81,15 @@ interface ParsedCsv {
 function parseHeaderColumns(csvData: string, options: CsvParseOptions): string[] {
   if (options.columns === true) {
     // The header is the first record once csv-parse stops treating it as
-    // the header; `from` counts records, so it is reset to reach it.
+    // the header; `from` counts records, so it is reset to reach it. The
+    // caller's `cast` applies, since csv-parse casts header cells too
+    // (`01` becomes the key `1`), but dates are left as text, as
+    // `castDate` leaves the header. Options that only make sense with
+    // `columns` on are dropped.
+    const { group_columns_by_name: _grouped, ...probeOptions } = options;
     const records: unknown = parseCsv(csvData, {
-      ...options,
+      ...probeOptions,
       columns: false,
-      cast: false,
       cast_date: false,
       from: 1,
       to: 1,
@@ -96,6 +119,7 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
     columns = true,
     skip_empty_lines = true,
     bom = true,
+    cast_date = false,
     ...extraOptions
   } = renameCsvOptions(csvSpec.csvOptions ?? {});
   const options: CsvParseOptions = {
@@ -104,6 +128,8 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
     columns,
     skip_empty_lines,
     bom,
+    cast_date:
+      cast_date === true ? (castDate as CastingDateFunction) : cast_date,
     ...extraOptions,
   };
   // csv-parse's sync `parse` is typed as returning `any`.

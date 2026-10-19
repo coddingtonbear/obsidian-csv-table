@@ -312,6 +312,63 @@ describe("csv_table/getFilteredCsvData", () => {
     expect(asDates.rows[0].start).toEqual(new Date(2021, 9, 28, 12, 0));
   });
 
+  test("with cast_date, reads bare dates in local time and leaves the header alone", () => {
+    const tz = process.env.TZ;
+    try {
+      process.env.TZ = "America/Los_Angeles";
+      const actual = getFilteredCsvData(
+        {
+          source: "a.csv",
+          csvOptions: { cast_date: true },
+          filter: 'd >= "2021-10-28" and d == "2021-10-28"',
+        },
+        "Jan 2021,d\nx,2021-10-28\ny,2021-10-27\n"
+      );
+      expect(actual.columns).toEqual(["Jan 2021", "d"]);
+      expect(actual.rows).toEqual([{ "Jan 2021": "x", d: new Date(2021, 9, 28) }]);
+    } finally {
+      if (tz === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = tz;
+      }
+    }
+  });
+
+  test("keys numeric-looking header names the way csv-parse casts them", () => {
+    const actual = getFilteredCsvData({ source: "a.csv" }, "01,02\n1,2\n");
+    expect(actual.columns).toEqual(["1", "2"]);
+    expect(actual.rows).toEqual([{ "1": 1, "2": 2 }]);
+    const uncast = getFilteredCsvData(
+      { source: "a.csv", csvOptions: { cast: false } },
+      "01,02\n1,2\n"
+    );
+    expect(uncast.columns).toEqual(["01", "02"]);
+    expect(uncast.rows).toEqual([{ "01": "1", "02": "2" }]);
+  });
+
+  test("groups same-named columns when asked, under either option name", () => {
+    for (const csvOptions of [
+      { group_columns_by_name: true },
+      { columns_duplicates_to_array: true },
+    ]) {
+      const actual = getFilteredCsvData(
+        { source: "a.csv", csvOptions },
+        "a,a\n1,2\n"
+      );
+      expect(actual.columns).toEqual(["a"]);
+      expect(actual.rows).toEqual([{ a: [1, 2] }]);
+    }
+  });
+
+  test("sorts by a column named with a number", () => {
+    const actual = getFilteredCsvData(
+      { source: "a.csv", sortBy: { expression: "'2020'", reversed: false } },
+      "name,2020\nb,5\na,1\nc,3\n"
+    );
+    expect(actual.rows.map((row) => row.name)).toEqual(["a", "c", "b"]);
+  });
+
   test("passes csvOptions through to the parser", () => {
     const actual = getFilteredCsvData(
       { source: "a.csv", csvOptions: { delimiter: ";", cast: false } },

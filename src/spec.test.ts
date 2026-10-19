@@ -86,21 +86,32 @@ sortBy:
     ).toMatchObject({ sortBy: { expression: "x", reversed: false } });
     expect(
       parseTableSpec("source: a.csv\nsortBy:\n- 2020\n- expression: 2021")
-    ).toMatchObject({ sortBy: ["2020", { expression: "2021", reversed: false }] });
+    ).toMatchObject({
+      sortBy: ["'2020'", { expression: "'2021'", reversed: false }],
+    });
     expect(
       parseTableSpec("source: a.csv\ncolumns:\n- 2020\n- name: 2021\n  expression: 2020")
     ).toMatchObject({
-      columns: ["2020", { name: "2021", expression: "2020" }],
+      columns: ["2020", { name: "2021", expression: "'2020'" }],
     });
   });
 
   test("accepts unquoted dates as column names, as Obsidian's YAML reads them", () => {
     expect(
-      parseTableSpec("source: a.csv\ncolumns:\n- 2021-01-01\n- name: 2021-01-02\nsortBy: 2021-01-01")
+      parseTableSpec(
+        "source: a.csv\ncolumns:\n- 2021-01-01\n- name: 2021-01-02\ncolumnVariables:\n  jan: 2021-01-01\nsortBy: 2021-01-01"
+      )
     ).toMatchObject({
       columns: ["2021-01-01", { name: "2021-01-02", expression: "2021-01-02" }],
-      sortBy: "2021-01-01",
+      columnVariables: { jan: "2021-01-01" },
+      sortBy: "'2021-01-01'",
     });
+  });
+
+  test("asks for a date with a time to be quoted", () => {
+    expect(() =>
+      parseTableSpec("source: a.csv\ncolumns:\n- 2021-01-01 08:00:00")
+    ).toThrow(/'columns' must be a list/);
   });
 
   test("accepts numeric column names in columnVariables", () => {

@@ -68,9 +68,10 @@ See "Filtering displayed rows" for an example of a filter expression in action, 
 
 - `and`, `or` and `not` need true-or-false operands: write `not (population > 100000000)` or `done == true` rather than `not population`.
 - `true` and `false` can be written as-is, e.g. `done == true`.
-- Comparisons and arithmetic coerce the way JavaScript does: a number cell compared with text naming a number (`population == "50340000"`) matches, and a blank cell counts as zero in `-`, `*`, `/` and `mod` (`+` with a blank cell joins text, as in JavaScript). Multiplying text gives a value that displays as `null` and is neither less nor greater than anything; dividing by zero gives one that displays as `null` but is greater than every number. `in` compares exactly. Write `mod` rather than `%`, which filtrex has deprecated.
+- Comparisons and arithmetic coerce the way JavaScript does: a number cell compared with text naming a number (`population == "50340000"`) matches, and a blank cell counts as zero in `-`, `*`, `/` and `mod` (`+` with a blank cell joins text, as in JavaScript). Multiplying text, or dividing zero by zero, gives a value that displays as `null` and is neither less nor greater than anything; dividing a positive number by zero gives one that displays as `null` but is greater than every number. `in` compares exactly. Write `mod` rather than `%`, which filtrex has deprecated.
 - Dates are text unless you set `cast_date: true` in `csvOptions` (see "Filtering displayed rows"). Text compares alphabetically, which puts year-first dates in order: `start >= "2021-10-28"`. A date cell can be compared with another date cell, or with text naming a date; dates and times written without a time zone are read in your local time zone, on both sides of the comparison.
 - A column whose name isn't a valid identifier (letters, digits and underscores, not starting with a digit) can be written in single quotes, as in `'Country Name' == "Colombia"`, or given a usable name with `columnVariables`.
+- YAML reads an unquoted `2021-01-01` as a date and `010` as the number 10, so quote such column names (`- "010"`) wherever you write them in the block.
 
 ### Selecting particular columns
 
@@ -179,7 +180,7 @@ filter: start >= "2021-10-28"
 ```
 ~~~
 
-If you set `cast_date: true` in `csvOptions`, csv-parse turns every cell JavaScript can read as a date into one (including text like "March" or "meeting 5", so use it on files you know). A date cell is displayed as `2021-01-11`, or `2021-01-11 08:00` when it has a time, in your local time zone, and compares with text naming a date, as described under "Expressions".
+If you set `cast_date: true` in `csvOptions`, every cell JavaScript can read as a date becomes one (including text like "March" or "meeting 5", so use it on files you know; the header line is left alone). A date cell is displayed as `2021-01-11`, or `2021-01-11 08:00` when it has a time, in your local time zone, and compares with text naming a date, as described under "Expressions".
 
 Also, note that your filter expression can also be provided as a list; those expressions will be and-ed together, e.g.:
 

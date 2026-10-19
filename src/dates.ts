@@ -1,5 +1,6 @@
-/** How dates are read from text and written back, shared by `cast_date`,
- * the expression operators and cell display so that all three agree. */
+/** How dates are read from text and written back, shared by `cast_date`
+ * (when a block turns it on), the expression operators and cell display so
+ * that all three agree. */
 
 const DATE_ONLY = /^(\d{4})(?:-(\d{1,2})(?:-(\d{1,2}))?)?$/;
 
@@ -33,7 +34,7 @@ const pad = (n: number, width = 2): string => String(n).padStart(width, "0");
 
 /** A Date as the CSV most likely wrote it: `2021-01-11` for a date at local
  * midnight, otherwise `2021-01-11 08:00` (with seconds when they aren't
- * zero), in local time, which is how `cast_date` read it. */
+ * zero), in local time, which is how `parseDateText` read it. */
 export function formatDate(date: Date): string {
   if (Number.isNaN(date.getTime())) {
     return "Invalid Date";

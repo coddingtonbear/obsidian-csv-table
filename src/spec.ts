@@ -13,25 +13,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** A column name may be written as a number (`year: 2020`, or a position
- * when `columns` is off); row keys are text, so the name is read as text. */
+ * when `columns` is off) or an unquoted date; row keys are text, so the
+ * name is read as text. */
 function toColumnVariables(
   value: Record<string, unknown>
 ): Record<string, string> | undefined {
   const variables: Record<string, string> = {};
   for (const [name, columnName] of Object.entries(value)) {
-    if (typeof columnName === "string") {
-      variables[name] = columnName;
-    } else if (typeof columnName === "number") {
-      variables[name] = String(columnName);
-    } else {
+    const column = toColumnName(columnName);
+    if (column === undefined) {
       return undefined;
     }
+    variables[name] = column;
   }
   return variables;
 }
 
 /** A column name written as a number (`2020`) is read as text, and so is
- * one Obsidian's YAML parser read as a date (`2021-01-01`, unquoted). */
+ * one Obsidian's YAML parser read as a date (`2021-01-01`, unquoted). A
+ * date with a time can't be read back as it was written, so it has to be
+ * quoted. */
 function toColumnName(value: unknown): string | undefined {
   if (typeof value === "string") {
     return value;
@@ -42,9 +43,20 @@ function toColumnName(value: unknown): string | undefined {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     // YAML timestamps are UTC; a bare date is midnight UTC.
     const iso = value.toISOString();
-    return iso.endsWith("T00:00:00.000Z") ? iso.slice(0, 10) : iso;
+    return iso.endsWith("T00:00:00.000Z") ? iso.slice(0, 10) : undefined;
   }
   return undefined;
+}
+
+/** An expression written as a number or date (`sortBy: 2020`) names the
+ * column of that name, as filtrex's single-quoted symbol does; as an
+ * expression it would be the constant 2020. */
+function toColumnExpression(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+  const name = toColumnName(value);
+  return name === undefined ? undefined : `'${name}'`;
 }
 
 /** `{ name }` alone names an existing column, as it did in 1.2. */
@@ -59,7 +71,7 @@ function toNamedColumn(value: unknown): NamedColumn | undefined {
   if (value.expression === undefined || value.expression === null) {
     return { name, expression: name };
   }
-  const expression = toColumnName(value.expression);
+  const expression = toColumnExpression(value.expression);
   return expression === undefined ? undefined : { name, expression };
 }
 
@@ -77,7 +89,7 @@ function toSortExpression(value: unknown): ExtendedSortExpression | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
-  const expression = toColumnName(value.expression);
+  const expression = toColumnExpression(value.expression);
   if (expression === undefined) {
     return undefined;
   }
@@ -180,7 +192,7 @@ export function parseTableSpec(text: string): CsvTableSpec {
   }
   if (sortBy !== undefined) {
     const toSortItem = (item: unknown): string | ExtendedSortExpression | undefined =>
-      isRecord(item) ? toSortExpression(item) : toColumnName(item);
+      isRecord(item) ? toSortExpression(item) : toColumnExpression(item);
     const items = (Array.isArray(sortBy) ? sortBy : [sortBy]).map(toSortItem);
     if (items.some((item) => item === undefined)) {
       throw new Error(
