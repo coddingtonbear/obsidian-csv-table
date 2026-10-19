@@ -1,8 +1,8 @@
 import { compileRowExpression, RowExpression } from "./expression";
 import { CsvRow, ExtendedSortExpression, NamedColumn } from "./types";
 
-/** Returns the rows among the first `maxRows` that pass every filter, in
- * their original order. */
+/** Returns the rows passing every filter, in their original order, up to
+ * `maxRows` of them. */
 export function applyRowFilters(
   filters: string[],
   maxRows: number = Infinity,
@@ -12,12 +12,10 @@ export function applyRowFilters(
   const expressions = filters.map(compileRowExpression);
   const filteredRows: CsvRow[] = [];
 
-  let rowIndex = 1;
   for (const row of rows) {
-    if (rowIndex > maxRows) {
+    if (filteredRows.length >= maxRows) {
       break;
     }
-    rowIndex += 1;
     const passesTests = expressions.every((expression) =>
       Boolean(evaluateExpression(row, expression, columnVariables))
     );

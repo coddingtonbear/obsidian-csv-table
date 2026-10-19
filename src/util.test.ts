@@ -44,6 +44,17 @@ describe("util/applyRowFilters", () => {
     expect(finalRows).toEqual([EXAMPLE_ROWS[0]]);
   });
 
+  test("Counts the limit against rows that pass the filters", () => {
+    const finalRows = applyRowFilters(
+      ["population < 300000000"],
+      1,
+      EXAMPLE_ROWS,
+      {}
+    );
+
+    expect(finalRows).toEqual([EXAMPLE_ROWS[1]]);
+  });
+
   test("Applies single row filter as expression", () => {
     const finalRows = applyRowFilters(
       ["population < 100000000"],

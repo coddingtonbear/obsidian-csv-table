@@ -89,7 +89,7 @@ export function getFilteredCsvData(
     >(csvSpec.sortBy).map(getSortExpression);
     const filteredRows = applyRowFilters(
       getArrayForArrayOrObject<string>(csvSpec.filter),
-      csvSpec.maxRows ?? Infinity,
+      Infinity,
       parsedCsvData,
       csvSpec.columnVariables
     );
@@ -97,7 +97,7 @@ export function getFilteredCsvData(
       sortExpressions,
       filteredRows,
       csvSpec.columnVariables
-    );
+    ).slice(0, csvSpec.maxRows ?? Infinity);
   } catch (e) {
     throw new Error(`Error evaluating filter expressions: ${errorMessage(e)}.`);
   }

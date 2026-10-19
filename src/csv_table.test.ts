@@ -146,6 +146,19 @@ describe("csv_table/getFilteredCsvData", () => {
     ).toThrow(/Error evaluating filter expressions: Unknown function/);
   });
 
+  test("filters, then sorts, then limits to maxRows", () => {
+    const csvData = getCsvString(SAMPLE_CSV_DATA);
+    const tableSpec: CsvTableSpec = {
+      source: "arbitrary.csv",
+      filter: "population < 300000000",
+      sortBy: { expression: "population", reversed: true },
+      maxRows: 1,
+    };
+
+    const actual = getFilteredCsvData(tableSpec, csvData);
+    expect(actual.rows.map((row) => row.country)).toEqual(["Russia"]);
+  });
+
   test("renders an empty table for a CSV with no rows", () => {
     expect(getFilteredCsvData({ source: "a.csv" }, "")).toEqual({
       columns: [],
