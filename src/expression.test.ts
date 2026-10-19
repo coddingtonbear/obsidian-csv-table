@@ -142,7 +142,7 @@ describe("expression/compileRowExpression", () => {
   });
 
   test("throws a syntax error when compiling", () => {
-    expect(() => compileRowExpression("a ==")).toThrow();
+    expect(() => compileRowExpression("a ==")).toThrow(/Parse error/);
   });
 
   test("throws runtime errors instead of returning them", () => {

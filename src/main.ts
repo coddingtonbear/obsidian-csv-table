@@ -1,4 +1,4 @@
-import { Plugin } from "obsidian";
+import { Plugin, normalizePath } from "obsidian";
 
 import { getFilteredCsvData } from "./csv_table";
 import { errorMessage } from "./expression";
@@ -13,7 +13,9 @@ export default class CsvTablePlugin extends Plugin {
         try {
           const tableSpec = parseTableSpec(csvSpecString);
 
-          const file = this.app.vault.getFileByPath(tableSpec.source);
+          const file = this.app.vault.getFileByPath(
+            normalizePath(tableSpec.source)
+          );
           if (file === null) {
             throw new Error(
               `CSV file '${tableSpec.source}' could not be found.`

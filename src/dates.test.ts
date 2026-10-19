@@ -15,10 +15,24 @@ describe("dates/parseDateText", () => {
     expect(date?.getFullYear()).toBe(99);
   });
 
-  test("reads dates with times through Date.parse", () => {
+  test("reads dates with wall-clock times as local time", () => {
     expect(parseDateText("2021-01-11 08:00")).toEqual(
       new Date(2021, 0, 11, 8, 0)
     );
+    expect(parseDateText("2021-01-11T08:00")).toEqual(
+      new Date(2021, 0, 11, 8, 0)
+    );
+    expect(parseDateText("2021-1-5 8:05:09")).toEqual(
+      new Date(2021, 0, 5, 8, 5, 9)
+    );
+    expect(parseDateText("2021-01-11 08:00:00.5")).toEqual(
+      new Date(2021, 0, 11, 8, 0, 0, 500)
+    );
+    expect(parseDateText("2021-01-11 24:00")).toBeUndefined();
+    expect(parseDateText("2021-01-11 08:60")).toBeUndefined();
+  });
+
+  test("reads other forms through Date.parse", () => {
     expect(parseDateText("2021-01-11T08:00:00Z")).toEqual(
       new Date("2021-01-11T08:00:00Z")
     );
@@ -62,13 +76,18 @@ describe("dates/formatDate", () => {
       "2021-01-11 08:00:30"
     );
     expect(formatDate(new Date(2021, 0, 11, 0, 0, 0, 5))).toEqual(
-      "2021-01-11 00:00:00"
+      "2021-01-11 00:00:00.005"
     );
     expect(formatDate(new Date(NaN))).toEqual("Invalid Date");
   });
 
   test("round-trips what parseDateText read", () => {
-    for (const text of ["2021-01-11", "2021-01-11 08:00", "2021-01-11 08:00:30"]) {
+    for (const text of [
+      "2021-01-11",
+      "2021-01-11 08:00",
+      "2021-01-11 08:00:30",
+      "2021-01-11 08:00:30.250",
+    ]) {
       const date = parseDateText(text);
       expect(date).toBeDefined();
       expect(formatDate(date ?? new Date(NaN))).toEqual(text);

@@ -368,6 +368,61 @@ describe("csv_table/getFilteredCsvData", () => {
         "a,b\n1,2,3\n"
       ).rows
     ).toEqual([{ a: 1, b: "2,3" }]);
+    const counted = getFilteredCsvData(
+      { source: "a.csv", csvOptions: { ignore_last_delimiters: 2 } },
+      "a,b,c\n1,2,3,4\n"
+    );
+    expect(counted.columns).toEqual(["a", "b,c"]);
+    expect(counted.rows).toEqual([{ a: 1, "b,c": "2,3,4" }]);
+  });
+
+  test("reads camelCase csv-parse option names", () => {
+    const tz = process.env.TZ;
+    try {
+      process.env.TZ = "America/Los_Angeles";
+      const actual = getFilteredCsvData(
+        {
+          source: "a.csv",
+          csvOptions: { castDate: true, skipEmptyLines: false },
+          filter: 'd == "2021-01-11"',
+        },
+        "Jan 2021,d\nx,2021-01-11\n"
+      );
+      expect(actual.columns).toEqual(["Jan 2021", "d"]);
+      expect(actual.rows).toEqual([{ "Jan 2021": "x", d: new Date(2021, 0, 11) }]);
+    } finally {
+      if (tz === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = tz;
+      }
+    }
+    expect(
+      getFilteredCsvData(
+        { source: "a.csv", csvOptions: { relaxQuotes: true } },
+        'a,b\n1,x"y\n'
+      ).rows
+    ).toEqual([{ a: 1, b: 'x"y' }]);
+  });
+
+  test("treats a quoted number as a constant and a bare one as a column", () => {
+    const csv = "name,2020\nb,5\na,1\nc,3\n";
+    expect(
+      getFilteredCsvData({ source: "a.csv", sortBy: "2020" }, csv).rows.map(
+        (row) => row.name
+      )
+    ).toEqual(["b", "a", "c"]);
+    expect(
+      getFilteredCsvData({ source: "a.csv", sortBy: "'2020'" }, csv).rows.map(
+        (row) => row.name
+      )
+    ).toEqual(["a", "c", "b"]);
+  });
+
+  test("shows no rows for maxRows 0", () => {
+    expect(
+      getFilteredCsvData({ source: "a.csv", maxRows: 0 }, getCsvString(SAMPLE_CSV_DATA)).rows
+    ).toEqual([]);
   });
 
   test("sorts by a column named with a number", () => {

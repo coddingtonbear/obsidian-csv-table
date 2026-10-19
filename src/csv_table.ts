@@ -1,8 +1,4 @@
-import type {
-  CastingDateFunction,
-  InfoField,
-  Options as CsvParseOptions,
-} from "csv-parse";
+import type { CastingDateFunction, Options as CsvParseOptions } from "csv-parse";
 import { parse as parseCsv } from "csv-parse/sync";
 
 import { parseDateText } from "./dates";
@@ -42,17 +38,27 @@ const RENAMED_CSV_OPTIONS: Record<string, string> = {
   columns_duplicates_to_array: "group_columns_by_name",
 };
 
-function renameCsvOptions(options: CsvParseOptions): CsvParseOptions {
-  const renamed: Record<string, unknown> = {};
-  for (const [name, value] of Object.entries(options) as [string, unknown][]) {
+/** csv-parse accepts every option in camelCase too (`castDate`); the
+ * snake_case spelling is the one the defaults and renames below look for. */
+function snakeCase(name: string): string {
+  return name.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+
+function normalizeCsvOptions(options: CsvParseOptions): CsvParseOptions {
+  const entries = Object.entries(options).map(
+    ([name, value]: [string, unknown]) => [snakeCase(name), value] as const
+  );
+  const given = new Set(entries.map(([name]) => name));
+  const normalized: Record<string, unknown> = {};
+  for (const [name, value] of entries) {
     const newName = RENAMED_CSV_OPTIONS[name];
     if (newName === undefined) {
-      renamed[name] = value;
-    } else if (!(newName in options)) {
-      renamed[newName] = value;
+      normalized[name] = value;
+    } else if (!given.has(newName)) {
+      normalized[newName] = value;
     }
   }
-  return renamed;
+  return normalized;
 }
 
 interface ParsedCsv {
@@ -61,59 +67,17 @@ interface ParsedCsv {
   columns: string[];
 }
 
-/** What `cast_date: true` means here: csv-parse's own reads a bare date as
- * UTC midnight, while filters and display read dates in local time, so a
- * cell `2021-10-28` would neither equal nor display as `2021-10-28`. This
- * reads every form the same way (`parseDateText`), and leaves the header
- * line alone, which csv-parse would otherwise cast too.
- *
- * Like csv-parse's own implementation, this returns the text untouched when
- * it isn't a date; csv-parse's `CastingDateFunction` type says `Date` only,
- * hence the assertion where it's used. */
-function castDate(value: string, context: InfoField): Date | string {
-  return context.header ? value : (parseDateText(value) ?? value);
-}
-
-/** The column names csv-parse keys rows by: the header line when it is
- * reading one (`columns: true`), or the names given in a `columns` list.
- * Read from the header rather than from the first row, which under
- * `relax_column_count` may be short. */
-function parseHeaderColumns(csvData: string, options: CsvParseOptions): string[] {
-  if (options.columns === true) {
-    // The header is the first record once csv-parse stops treating it as
-    // the header; `from` counts records, so it is reset to reach it. The
-    // caller's `cast` applies, since csv-parse casts header cells too
-    // (`01` becomes the key `1`), but dates are left as text, as
-    // `castDate` leaves the header. Options that only make sense with
-    // `columns` on are dropped.
-    const {
-      group_columns_by_name: _grouped,
-      ignore_last_delimiters: _ignored,
-      ...probeOptions
-    } = options;
-    const records: unknown = parseCsv(csvData, {
-      ...probeOptions,
-      columns: false,
-      cast_date: false,
-      from: 1,
-      to: 1,
-    });
-    const header: unknown = Array.isArray(records) ? records[0] : undefined;
-    // csv-parse keeps the last of two same-named columns under one key.
-    return Array.isArray(header) ? [...new Set(header.map(String))] : [];
-  }
-  if (Array.isArray(options.columns)) {
-    return options.columns.flatMap((column: unknown) => {
-      if (typeof column === "string") {
-        return [column];
-      }
-      if (typeof column === "object" && column !== null && "name" in column) {
-        return typeof column.name === "string" ? [column.name] : [];
-      }
-      return [];
-    });
-  }
-  return [];
+/** The names in a `columns` list given through `csvOptions`. */
+function listedColumns(columns: unknown[]): string[] {
+  return columns.flatMap((column: unknown) => {
+    if (typeof column === "string") {
+      return [column];
+    }
+    if (typeof column === "object" && column !== null && "name" in column) {
+      return typeof column.name === "string" ? [column.name] : [];
+    }
+    return [];
+  });
 }
 
 function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
@@ -125,11 +89,38 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
     bom = true,
     cast_date = false,
     ...extraOptions
-  } = renameCsvOptions(csvSpec.csvOptions ?? {});
+  } = normalizeCsvOptions(csvSpec.csvOptions ?? {});
+
+  // With `columns: true`, csv-parse reads the header line itself. Passing a
+  // function instead gets that line handed over -- after csv-parse's own
+  // casting, so `01` arrives as the key `1` -- which is how the column
+  // names are known even when there are no rows, or the first row is short
+  // (`relax_column_count`). csv-parse keeps the last of two same-named
+  // columns under one key, hence the Set.
+  let header: string[] | undefined;
+  // csv-parse types the line as text, but hands over cast values.
+  const readHeader = (line: string[]): string[] => {
+    header = [...new Set(line.map(String))];
+    return line;
+  };
+
+  // What `cast_date: true` means here: csv-parse's own reads a bare date as
+  // UTC midnight, while filters and display read dates in local time, so a
+  // cell `2021-10-28` would neither equal nor display as `2021-10-28`. This
+  // reads every form the same way (`parseDateText`). The header line, which
+  // csv-parse casts too, is left alone: its cells are cast before
+  // `readHeader` is called. Like csv-parse's own implementation, this
+  // returns the text untouched when it isn't a date; csv-parse's
+  // `CastingDateFunction` type says `Date` only, hence the assertion.
+  const castDate = (value: string): Date | string =>
+    columns === true && header === undefined
+      ? value
+      : (parseDateText(value) ?? value);
+
   const options: CsvParseOptions = {
     cast,
     trim,
-    columns,
+    columns: columns === true ? readHeader : columns,
     skip_empty_lines,
     bom,
     cast_date:
@@ -142,11 +133,10 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
     throw new Error("Expected the CSV parser to return a list of records.");
   }
   const rows = records.map(toRow);
-  const headerColumns = parseHeaderColumns(csvData, options);
+  const listed = Array.isArray(columns) ? listedColumns(columns) : undefined;
   return {
     rows,
-    columns:
-      headerColumns.length > 0 ? headerColumns : Object.keys(rows[0] ?? {}),
+    columns: header ?? listed ?? Object.keys(rows[0] ?? {}),
   };
 }
 
