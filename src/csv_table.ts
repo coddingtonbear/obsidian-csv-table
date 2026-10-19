@@ -33,6 +33,7 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): CsvRow[] {
     trim = true,
     columns = true,
     skip_empty_lines = true,
+    bom = true,
     ...extraOptions
   } = csvSpec.csvOptions ?? {};
   // csv-parse's sync `parse` is typed as returning `any`.
@@ -42,6 +43,7 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): CsvRow[] {
     trim,
     columns,
     skip_empty_lines,
+    bom,
     ...extraOptions,
   });
   if (!Array.isArray(records)) {

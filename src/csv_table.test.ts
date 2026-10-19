@@ -173,6 +173,12 @@ describe("csv_table/getFilteredCsvData", () => {
     ).toEqual({ columns: ["a", "b"], rows: [] });
   });
 
+  test("ignores a byte order mark", () => {
+    const actual = getFilteredCsvData({ source: "a.csv" }, "\ufeffa,b\n1,2\n");
+    expect(actual.columns).toEqual(["a", "b"]);
+    expect(actual.rows).toEqual([{ a: 1, b: 2 }]);
+  });
+
   test("passes csvOptions through to the parser", () => {
     const actual = getFilteredCsvData(
       { source: "a.csv", csvOptions: { delimiter: ";", cast: false } },
