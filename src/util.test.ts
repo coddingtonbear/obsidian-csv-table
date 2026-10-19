@@ -32,33 +32,14 @@ const EXAMPLE_ROWS: CsvRow[] = [
 
 describe("util/applyRowFilters", () => {
   test("If no filters, all rows are returned", () => {
-    const finalRows = applyRowFilters([], Infinity, EXAMPLE_ROWS, {});
+    const finalRows = applyRowFilters([], EXAMPLE_ROWS, {});
 
     expect(finalRows).toEqual(EXAMPLE_ROWS);
-  });
-
-  test("Limits count of rows to specified limit", () => {
-    const finalRows = applyRowFilters([], 1, EXAMPLE_ROWS, {});
-
-    // The first one should be the only result
-    expect(finalRows).toEqual([EXAMPLE_ROWS[0]]);
-  });
-
-  test("Counts the limit against rows that pass the filters", () => {
-    const finalRows = applyRowFilters(
-      ["population < 300000000"],
-      1,
-      EXAMPLE_ROWS,
-      {}
-    );
-
-    expect(finalRows).toEqual([EXAMPLE_ROWS[1]]);
   });
 
   test("Applies single row filter as expression", () => {
     const finalRows = applyRowFilters(
       ["population < 100000000"],
-      Infinity,
       EXAMPLE_ROWS,
       {}
     );
@@ -70,7 +51,6 @@ describe("util/applyRowFilters", () => {
   test("Applies multiple row filters as anded expression", () => {
     const finalRows = applyRowFilters(
       ["population < 300000000", 'capitol == "Moscow"'],
-      Infinity,
       EXAMPLE_ROWS,
       {}
     );
@@ -82,7 +62,6 @@ describe("util/applyRowFilters", () => {
   test("Applies column variable transformations", () => {
     const finalRows = applyRowFilters(
       ["poblacion < 100000000"],
-      Infinity,
       EXAMPLE_ROWS,
       {
         poblacion: "population",
@@ -95,7 +74,7 @@ describe("util/applyRowFilters", () => {
 
   test("Reports a runtime error instead of matching every row", () => {
     expect(() =>
-      applyRowFilters(["unknownFunction(population)"], Infinity, EXAMPLE_ROWS)
+      applyRowFilters(["unknownFunction(population)"], EXAMPLE_ROWS)
     ).toThrow(/Unknown function/);
   });
 });

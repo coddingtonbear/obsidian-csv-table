@@ -55,20 +55,25 @@ interface ParsedCsv {
   columns: string[];
 }
 
-/** The column names a header-only file would have keyed its rows by: the
- * header line when csv-parse is reading it (`columns: true`), or the names
- * given in a `columns` list. */
+/** The column names csv-parse keys rows by: the header line when it is
+ * reading one (`columns: true`), or the names given in a `columns` list.
+ * Read from the header rather than from the first row, which under
+ * `relax_column_count` may be short. */
 function parseHeaderColumns(csvData: string, options: CsvParseOptions): string[] {
   if (options.columns === true) {
+    // The header is the first record once csv-parse stops treating it as
+    // the header; `from` counts records, so it is reset to reach it.
     const records: unknown = parseCsv(csvData, {
       ...options,
       columns: false,
       cast: false,
       cast_date: false,
+      from: 1,
       to: 1,
     });
     const header: unknown = Array.isArray(records) ? records[0] : undefined;
-    return Array.isArray(header) ? header.map(String) : [];
+    // csv-parse keeps the last of two same-named columns under one key.
+    return Array.isArray(header) ? [...new Set(header.map(String))] : [];
   }
   if (Array.isArray(options.columns)) {
     return options.columns.flatMap((column: unknown) => {
@@ -107,12 +112,11 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
     throw new Error("Expected the CSV parser to return a list of records.");
   }
   const rows = records.map(toRow);
+  const headerColumns = parseHeaderColumns(csvData, options);
   return {
     rows,
     columns:
-      rows.length > 0
-        ? Object.keys(rows[0])
-        : parseHeaderColumns(csvData, options),
+      headerColumns.length > 0 ? headerColumns : Object.keys(rows[0] ?? {}),
   };
 }
 
@@ -149,24 +153,29 @@ export function getFilteredCsvData(
     throw new Error(`Error evaluating column expressions: ${errorMessage(e)}.`);
   }
 
+  let filteredRows: CsvRow[] = [];
+  try {
+    filteredRows = applyRowFilters(
+      getArrayForArrayOrObject<string>(csvSpec.filter),
+      parsedCsvData,
+      csvSpec.columnVariables
+    );
+  } catch (e) {
+    throw new Error(`Error evaluating filter expressions: ${errorMessage(e)}.`);
+  }
+
   let filteredSortedCsvData: CsvRow[] = [];
   try {
     const sortExpressions = getArrayForArrayOrObject<
       string | ExtendedSortExpression
     >(csvSpec.sortBy).map(getSortExpression);
-    const filteredRows = applyRowFilters(
-      getArrayForArrayOrObject<string>(csvSpec.filter),
-      Infinity,
-      parsedCsvData,
-      csvSpec.columnVariables
-    );
     filteredSortedCsvData = sortRows(
       sortExpressions,
       filteredRows,
       csvSpec.columnVariables
     ).slice(0, csvSpec.maxRows ?? Infinity);
   } catch (e) {
-    throw new Error(`Error evaluating filter expressions: ${errorMessage(e)}.`);
+    throw new Error(`Error evaluating sort expressions: ${errorMessage(e)}.`);
   }
 
   return {

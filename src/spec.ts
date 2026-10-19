@@ -4,7 +4,12 @@ import { errorMessage } from "./expression";
 import { CsvTableSpec, ExtendedSortExpression, NamedColumn } from "./types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    !(value instanceof Date)
+  );
 }
 
 /** A column name may be written as a number (`year: 2020`, or a position
@@ -25,12 +30,21 @@ function toColumnVariables(
   return variables;
 }
 
-/** A column name written as a number (`2020`) is read as text. */
+/** A column name written as a number (`2020`) is read as text, and so is
+ * one Obsidian's YAML parser read as a date (`2021-01-01`, unquoted). */
 function toColumnName(value: unknown): string | undefined {
   if (typeof value === "string") {
     return value;
   }
-  return typeof value === "number" ? String(value) : undefined;
+  if (typeof value === "number") {
+    return String(value);
+  }
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    // YAML timestamps are UTC; a bare date is midnight UTC.
+    const iso = value.toISOString();
+    return iso.endsWith("T00:00:00.000Z") ? iso.slice(0, 10) : iso;
+  }
+  return undefined;
 }
 
 /** `{ name }` alone names an existing column, as it did in 1.2. */
@@ -49,12 +63,25 @@ function toNamedColumn(value: unknown): NamedColumn | undefined {
   return expression === undefined ? undefined : { name, expression };
 }
 
-/** `reversed` may be written as anything truthy (`yes`, `1`), as 1.2 read it. */
+/** `reversed` as a boolean. Obsidian's YAML parser reads `yes`/`no` and
+ * `on`/`off` as text, so those are read the way they were meant; any
+ * other text, and any number, counts by truthiness, as 1.2 read it. */
+function toReversed(value: unknown): boolean {
+  if (typeof value === "string") {
+    return !["", "false", "no", "off", "0"].includes(value.trim().toLowerCase());
+  }
+  return Boolean(value);
+}
+
 function toSortExpression(value: unknown): ExtendedSortExpression | undefined {
-  if (!isRecord(value) || typeof value.expression !== "string") {
+  if (!isRecord(value)) {
     return undefined;
   }
-  return { expression: value.expression, reversed: Boolean(value.reversed) };
+  const expression = toColumnName(value.expression);
+  if (expression === undefined) {
+    return undefined;
+  }
+  return { expression, reversed: toReversed(value.reversed) };
 }
 
 function isListOf<T>(
@@ -153,7 +180,7 @@ export function parseTableSpec(text: string): CsvTableSpec {
   }
   if (sortBy !== undefined) {
     const toSortItem = (item: unknown): string | ExtendedSortExpression | undefined =>
-      isString(item) ? item : toSortExpression(item);
+      isRecord(item) ? toSortExpression(item) : toColumnName(item);
     const items = (Array.isArray(sortBy) ? sortBy : [sortBy]).map(toSortItem);
     if (items.some((item) => item === undefined)) {
       throw new Error(

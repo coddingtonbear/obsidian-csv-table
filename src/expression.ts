@@ -74,8 +74,9 @@ function asText(value: unknown): string {
 
 /** JavaScript's `+`: text concatenation if either side is text, numeric
  * addition otherwise. Arithmetic returns JavaScript's results, as filtrex
- * 2 did: `"abc" * 2` is NaN and `n / 0` is Infinity; both display as
- * `null`, and neither is less than or greater than anything. */
+ * 2 did: `"abc" * 2` is NaN, which displays as `null` and is neither less
+ * nor greater than anything, and `n / 0` is Infinity, which also displays
+ * as `null` but is greater than every number. */
 function add(a: unknown, b: unknown): unknown {
   if (isTextual(a) || isTextual(b)) {
     return asText(a) + asText(b);

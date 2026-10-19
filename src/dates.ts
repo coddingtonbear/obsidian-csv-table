@@ -16,9 +16,11 @@ export function parseDateText(text: string): Date | undefined {
     const year = Number(dateOnly[1]);
     const month = dateOnly[2] === undefined ? 1 : Number(dateOnly[2]);
     const day = dateOnly[3] === undefined ? 1 : Number(dateOnly[3]);
-    const date = new Date(2000, month - 1, day);
-    // Set separately: the constructor reads years 0–99 as 1900–1999.
-    date.setFullYear(year);
+    const date = new Date(year, month - 1, day);
+    if (year < 100) {
+      // The constructor reads years 0–99 as 1900–1999.
+      date.setFullYear(year);
+    }
     return date.getMonth() === month - 1 && date.getDate() === day
       ? date
       : undefined;

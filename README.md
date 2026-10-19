@@ -68,7 +68,7 @@ See "Filtering displayed rows" for an example of a filter expression in action, 
 
 - `and`, `or` and `not` need true-or-false operands: write `not (population > 100000000)` or `done == true` rather than `not population`.
 - `true` and `false` can be written as-is, e.g. `done == true`.
-- Comparisons and arithmetic coerce the way JavaScript does: a number cell compared with text naming a number (`population == "50340000"`) matches, and a blank cell counts as zero in `-`, `*`, `/` and `%` (`+` with a blank cell joins text, as in JavaScript). Dividing by zero or multiplying text gives a value that displays as `null` and is neither less nor greater than anything. `in` compares exactly.
+- Comparisons and arithmetic coerce the way JavaScript does: a number cell compared with text naming a number (`population == "50340000"`) matches, and a blank cell counts as zero in `-`, `*`, `/` and `mod` (`+` with a blank cell joins text, as in JavaScript). Multiplying text gives a value that displays as `null` and is neither less nor greater than anything; dividing by zero gives one that displays as `null` but is greater than every number. `in` compares exactly. Write `mod` rather than `%`, which filtrex has deprecated.
 - Dates are text unless you set `cast_date: true` in `csvOptions` (see "Filtering displayed rows"). Text compares alphabetically, which puts year-first dates in order: `start >= "2021-10-28"`. A date cell can be compared with another date cell, or with text naming a date; dates and times written without a time zone are read in your local time zone, on both sides of the comparison.
 - A column whose name isn't a valid identifier (letters, digits and underscores, not starting with a digit) can be written in single quotes, as in `'Country Name' == "Colombia"`, or given a usable name with `columnVariables`.
 
@@ -284,4 +284,6 @@ Version 1.3 rebuilt the plugin on current tooling and newer versions of csv-pars
 - A byte order mark at the start of the file is skipped, so the first column of a CSV saved by Excel gets its proper name.
 - `and`, `or` and `not` require true-or-false operands; see "Expressions".
 - Expression errors that used to let every row through (an unknown function, for instance) now show as an error in place of the table.
+- A comparison used as a column expression (`population > 1000000`) displays as `true`/`false` rather than `1`/`0`.
+- The table's columns come from the CSV's header line even when the first row is short (with `relax_column_count`); previously the short row decided.
 - Tables carry the `csv-table` class and so fill the width of the note, as the plugin's stylesheet always intended.

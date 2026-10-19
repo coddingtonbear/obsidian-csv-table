@@ -2,29 +2,18 @@ import { formatDate } from "./dates";
 import { compare, compileRowExpression, RowExpression } from "./expression";
 import { CsvRow, ExtendedSortExpression, NamedColumn } from "./types";
 
-/** Returns the rows passing every filter, in their original order, up to
- * `maxRows` of them. */
+/** Returns the rows passing every filter, in their original order. */
 export function applyRowFilters(
   filters: string[],
-  maxRows: number = Infinity,
   rows: CsvRow[],
   columnVariables?: Record<string, string>
 ): CsvRow[] {
   const expressions = filters.map(compileRowExpression);
-  const filteredRows: CsvRow[] = [];
-
-  for (const row of rows) {
-    if (filteredRows.length >= maxRows) {
-      break;
-    }
-    const passesTests = expressions.every((expression) =>
+  return rows.filter((row) =>
+    expressions.every((expression) =>
       Boolean(evaluateExpression(row, expression, columnVariables))
-    );
-    if (passesTests) {
-      filteredRows.push(row);
-    }
-  }
-  return filteredRows;
+    )
+  );
 }
 
 /** Orders two sort keys as filters compare them. Keys that can't be

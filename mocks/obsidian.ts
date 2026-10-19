@@ -1,11 +1,14 @@
 // A minimal stand-in for the parts of the `obsidian` package this plugin
 // uses. The real package ships only type declarations; its runtime is
 // provided by the Obsidian app, so unit tests need this replacement.
-import { parse } from "yaml";
+import { load } from "js-yaml";
 
-// Mirrors the real declaration, which returns `any`.
+// Mirrors the real declaration, which returns `any`. Obsidian 1.14 bundles
+// js-yaml 4 with its default schema (checked in its app bundle), so
+// unquoted dates such as `2021-01-01` arrive as Date objects, as they do
+// in the app.
 export function parseYaml(text: string): any {
-  return parse(text);
+  return load(text);
 }
 
 export class Component {

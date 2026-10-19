@@ -109,7 +109,7 @@ describe("expression/compileRowExpression", () => {
     expect(evaluate("z ~= 5", row)).toBe(false);
     expect(evaluate("z ~= 9", row)).toBe(true);
     expect(evaluate('d ~= "^2021-01"', row)).toBe(true);
-    expect(() => evaluate('t ~= "("', row)).toThrow();
+    expect(() => evaluate('t ~= "("', row)).toThrow(/Invalid regular expression/);
   });
 
   test("never matches a comparison involving a value with no number", () => {

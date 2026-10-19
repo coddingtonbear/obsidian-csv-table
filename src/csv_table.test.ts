@@ -87,6 +87,47 @@ describe("csv_table/getFilteredCsvData", () => {
     expect(actual).toEqual(expected);
   });
 
+  test("with non-variable-safe column names", () => {
+    const csvData = getCsvString([
+      ["1st", "2nd"],
+      ["alpha", "1"],
+      ["beta", "2"],
+    ]);
+    const tableSpec: CsvTableSpec = {
+      source: "arbitrary.csv",
+      columns: ["1st", "2nd"],
+    };
+
+    const actual = getFilteredCsvData(tableSpec, csvData);
+    const expected: CsvTableData = {
+      columns: ["1st", "2nd"],
+      rows: [
+        {
+          "1st": "alpha",
+          "2nd": 1,
+        },
+        {
+          "1st": "beta",
+          "2nd": 2,
+        },
+      ],
+    };
+
+    expect(actual).toEqual(expected);
+  });
+
+  test("displays a comparison column as true or false", () => {
+    const actual = getFilteredCsvData(
+      { source: "a.csv", columns: ["country", "population > 100000000"] },
+      getCsvString(SAMPLE_CSV_DATA)
+    );
+    expect(actual.rows.map((row) => row["population > 100000000"])).toEqual([
+      true,
+      false,
+      true,
+    ]);
+  });
+
   test("with named column expressions", () => {
     const csvData = getCsvString(SAMPLE_CSV_DATA);
     const tableSpec: CsvTableSpec = {
@@ -134,6 +175,15 @@ describe("csv_table/getFilteredCsvData", () => {
         csvData
       )
     ).toThrow(/Error evaluating column expressions/);
+  });
+
+  test("reports a sort expression that cannot be compiled", () => {
+    expect(() =>
+      getFilteredCsvData(
+        { source: "arbitrary.csv", sortBy: "population +" },
+        getCsvString(SAMPLE_CSV_DATA)
+      )
+    ).toThrow(/Error evaluating sort expressions/);
   });
 
   test("reports a filter that cannot be evaluated", () => {
@@ -280,6 +330,23 @@ describe("csv_table/getFilteredCsvData", () => {
       { "0": "a", "1": "b" },
       { "0": 1, "1": 2 },
     ]);
+  });
+
+  test("takes column names from the header when the first row is short", () => {
+    const actual = getFilteredCsvData(
+      { source: "a.csv", csvOptions: { relax_column_count: true } },
+      "a,b,c\n1\n4,5,6\n"
+    );
+    expect(actual.columns).toEqual(["a", "b", "c"]);
+    expect(actual.rows).toEqual([{ a: 1 }, { a: 4, b: 5, c: 6 }]);
+  });
+
+  test("keeps the header when csvOptions skip records", () => {
+    const actual = getFilteredCsvData(
+      { source: "a.csv", csvOptions: { from: 2 } },
+      "a,b\n1,2\n"
+    );
+    expect(actual).toEqual({ columns: ["a", "b"], rows: [] });
   });
 
   test("reports CSV the parser rejects", () => {

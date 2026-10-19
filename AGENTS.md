@@ -7,12 +7,13 @@
 | `src/main.ts` | Plugin entry point: registers the `csvtable` code block processor, reads the CSV file from the vault and hands off to the modules below. Obsidian glue only. |
 | `src/spec.ts` | Parses and validates a `csvtable` block's YAML into a `CsvTableSpec`. |
 | `src/csv_table.ts` | Parses the CSV (csv-parse), evaluates `columns` expressions, then filters, sorts and limits the rows. |
-| `src/expression.ts` | Compiles filtrex expressions for `columns`, `filter` and `sortBy`, keeping the comparison semantics of filtrex 2 (which the plugin used until 1.2.0). |
+| `src/expression.ts` | Compiles filtrex expressions for `columns`, `filter` and `sortBy`, keeping the operator semantics of filtrex 2 (which the plugin used until 1.2.0). |
+| `src/dates.ts` | Reads dates from text and writes them back, shared by the expression operators and cell display so both see the same dates. |
 | `src/util.ts` | Row filtering, sorting and cell display helpers. |
 | `src/render.ts` | Renders the table, and the error block shown when a code block fails. |
 | `src/types.ts` | Shared types. |
 | `styles.css` | Plugin styles, committed as-is (no build step). |
-| `mocks/obsidian.ts` | Runtime stand-in for the `obsidian` package in unit tests (Vitest). |
+| `mocks/obsidian.ts` | Runtime stand-in for the `obsidian` package in unit tests (Vitest). Its `parseYaml` uses js-yaml 4, which is what Obsidian bundles. |
 
 Keep logic out of `main.ts` and `render.ts` where possible: everything else is unit-tested without Obsidian. `render.ts` is tested under jsdom (see the `@vitest-environment jsdom` comment at the top of `src/render.test.ts`).
 

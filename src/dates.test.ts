@@ -25,6 +25,27 @@ describe("dates/parseDateText", () => {
     expect(parseDateText("01/11/2021")).toEqual(new Date(2021, 0, 11));
   });
 
+  test("reads bare dates as local midnight on days that begin with a daylight-saving jump", () => {
+    const tz = process.env.TZ;
+    try {
+      // Santiago's clocks skipped 00:00 on 2000-10-15 and 2021-09-05.
+      process.env.TZ = "America/Santiago";
+      expect(formatDate(parseDateText("2021-10-15") ?? new Date(NaN))).toBe(
+        "2021-10-15"
+      );
+      expect(parseDateText("2021-10-15")?.getHours()).toBe(0);
+      expect(formatDate(parseDateText("2021-09-05") ?? new Date(NaN))).toBe(
+        "2021-09-05"
+      );
+    } finally {
+      if (tz === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = tz;
+      }
+    }
+  });
+
   test("rejects text that names no date", () => {
     expect(parseDateText("2021-02-30")).toBeUndefined();
     expect(parseDateText("2021-13-01")).toBeUndefined();

@@ -79,9 +79,27 @@ sortBy:
       parseTableSpec("source: a.csv\nsortBy:\n- expression: x\n  reversed: 0")
     ).toMatchObject({ sortBy: [{ expression: "x", reversed: false }] });
     expect(
+      parseTableSpec("source: a.csv\nsortBy:\n  expression: x\n  reversed: no")
+    ).toMatchObject({ sortBy: { expression: "x", reversed: false } });
+    expect(
+      parseTableSpec("source: a.csv\nsortBy:\n  expression: x\n  reversed: off")
+    ).toMatchObject({ sortBy: { expression: "x", reversed: false } });
+    expect(
+      parseTableSpec("source: a.csv\nsortBy:\n- 2020\n- expression: 2021")
+    ).toMatchObject({ sortBy: ["2020", { expression: "2021", reversed: false }] });
+    expect(
       parseTableSpec("source: a.csv\ncolumns:\n- 2020\n- name: 2021\n  expression: 2020")
     ).toMatchObject({
       columns: ["2020", { name: "2021", expression: "2020" }],
+    });
+  });
+
+  test("accepts unquoted dates as column names, as Obsidian's YAML reads them", () => {
+    expect(
+      parseTableSpec("source: a.csv\ncolumns:\n- 2021-01-01\n- name: 2021-01-02\nsortBy: 2021-01-01")
+    ).toMatchObject({
+      columns: ["2021-01-01", { name: "2021-01-02", expression: "2021-01-02" }],
+      sortBy: "2021-01-01",
     });
   });
 
