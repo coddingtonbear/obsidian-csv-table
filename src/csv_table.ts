@@ -86,7 +86,11 @@ function parseHeaderColumns(csvData: string, options: CsvParseOptions): string[]
     // (`01` becomes the key `1`), but dates are left as text, as
     // `castDate` leaves the header. Options that only make sense with
     // `columns` on are dropped.
-    const { group_columns_by_name: _grouped, ...probeOptions } = options;
+    const {
+      group_columns_by_name: _grouped,
+      ignore_last_delimiters: _ignored,
+      ...probeOptions
+    } = options;
     const records: unknown = parseCsv(csvData, {
       ...probeOptions,
       columns: false,

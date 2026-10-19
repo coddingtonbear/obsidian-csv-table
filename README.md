@@ -71,7 +71,7 @@ See "Filtering displayed rows" for an example of a filter expression in action, 
 - Comparisons and arithmetic coerce the way JavaScript does: a number cell compared with text naming a number (`population == "50340000"`) matches, and a blank cell counts as zero in `-`, `*`, `/` and `mod` (`+` with a blank cell joins text, as in JavaScript). Multiplying text, or dividing zero by zero, gives a value that displays as `null` and is neither less nor greater than anything; dividing a positive number by zero gives one that displays as `null` but is greater than every number. `in` compares exactly. Write `mod` rather than `%`, which filtrex has deprecated.
 - Dates are text unless you set `cast_date: true` in `csvOptions` (see "Filtering displayed rows"). Text compares alphabetically, which puts year-first dates in order: `start >= "2021-10-28"`. A date cell can be compared with another date cell, or with text naming a date; dates and times written without a time zone are read in your local time zone, on both sides of the comparison.
 - A column whose name isn't a valid identifier (letters, digits and underscores, not starting with a digit) can be written in single quotes, as in `'Country Name' == "Colombia"`, or given a usable name with `columnVariables`.
-- YAML reads an unquoted `2021-01-01` as a date and `010` as the number 10, so quote such column names (`- "010"`) wherever you write them in the block.
+- A column name that YAML reads as a date (`2021-01-01`) or a number (`2020`, `010`) can be written unquoted anywhere in the block; the plugin reads it back as the name (`010` becomes `10`, which is also how csv-parse keys that header). A date with a time must be quoted. Writing a number as a quoted string in `sortBy` or `expression` makes it a constant, not a column.
 
 ### Selecting particular columns
 
@@ -180,7 +180,7 @@ filter: start >= "2021-10-28"
 ```
 ~~~
 
-If you set `cast_date: true` in `csvOptions`, every cell JavaScript can read as a date becomes one (including text like "March" or "meeting 5", so use it on files you know; the header line is left alone). A date cell is displayed as `2021-01-11`, or `2021-01-11 08:00` when it has a time, in your local time zone, and compares with text naming a date, as described under "Expressions".
+If you set `cast_date: true` in `csvOptions`, every cell JavaScript can read as a date becomes one (including text like "March 5" or "meeting 5", so use it on files you know; the header line is left alone, and `cast` must stay on). A date cell is displayed as `2021-01-11`, or `2021-01-11 08:00` when it has a time, in your local time zone, and compares with text naming a date, as described under "Expressions".
 
 Also, note that your filter expression can also be provided as a list; those expressions will be and-ed together, e.g.:
 
@@ -281,7 +281,7 @@ Version 1.3 rebuilt the plugin on current tooling and newer versions of csv-pars
 - Requires Obsidian 1.13.1 or newer.
 - `maxRows` now counts the rows displayed, after filtering and sorting. It used to limit how many rows of the file were read before filtering, and sorting applied to that subset.
 - `cast_date` in `csvOptions` now takes effect (1.2 dropped it, so dates were always text, whatever the old Readme said). It is off by default, as before. With it on, date cells display as `2021-01-11` or `2021-01-11 08:00` in your local time zone and compare with text naming a date.
-- csv-parse's `relax`, `skip_lines_with_empty_values` and `skip_lines_with_error` options were renamed in csv-parse 5; the old names still work here.
+- csv-parse's `relax`, `skip_lines_with_empty_values`, `skip_lines_with_error` and `columns_duplicates_to_array` options were renamed in csv-parse 5; the old names still work here.
 - A byte order mark at the start of the file is skipped, so the first column of a CSV saved by Excel gets its proper name.
 - `and`, `or` and `not` require true-or-false operands; see "Expressions".
 - Expression errors that used to let every row through (an unknown function, for instance) now show as an error in place of the table.

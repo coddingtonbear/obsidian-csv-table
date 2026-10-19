@@ -361,6 +361,15 @@ describe("csv_table/getFilteredCsvData", () => {
     }
   });
 
+  test("accepts ignore_last_delimiters, which needs columns on", () => {
+    expect(
+      getFilteredCsvData(
+        { source: "a.csv", csvOptions: { ignore_last_delimiters: true } },
+        "a,b\n1,2,3\n"
+      ).rows
+    ).toEqual([{ a: 1, b: "2,3" }]);
+  });
+
   test("sorts by a column named with a number", () => {
     const actual = getFilteredCsvData(
       { source: "a.csv", sortBy: { expression: "'2020'", reversed: false } },
