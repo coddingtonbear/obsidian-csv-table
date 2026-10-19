@@ -53,7 +53,7 @@ will render a table like:
 ## Options
 
 - `source`: (Required) Path (relative to your vault's root) to the csv file to render within your notes.
-- `csvOptions`: Options to use for decoding the referenced CSV file; see https://csv.js.org/parse/options/ for available options (the names csv-parse 4 used, such as `relax`, are accepted too). By default the plugin sets `columns: true`, `trim: true`, `skip_empty_lines: true`, `bom: true`, `cast: true` and a `cast_date` that only casts cells that look like dates (see "Filtering displayed rows" below); anything you set here takes precedence.
+- `csvOptions`: Options to use for decoding the referenced CSV file; see https://csv.js.org/parse/options/ for available options (the names csv-parse 4 used, such as `relax`, are accepted too). By default the plugin sets `columns: true`, `trim: true`, `skip_empty_lines: true`, `bom: true` and `cast: true`; anything you set here takes precedence.
 - `columns`: A list of columns to render. Each item may be either the name of a field to display or an expression (see "Expressions" below), and can be re-named. If unspecified, all columns in the referenced CSV  will be rendered. See "Selecting particular columns" below for details.
 - `filter`: A list of filter expressions (see "Expressions" below) or a single filter expression to use for limiting which rows of the referenced CSV will be displayed. If unspecified, all rows of the referenced CSV will be rendered taking into account the value specified for `maxRows` below. See "Filtering displayed rows" for details.
 - `sortBy`: A list of sort expressions (see "Expressions" below) or a single sort expression to use for sorting the displayed rows.  If unspecified, rows will be displayed in the order they appear in the referenced CSV.  See "Sorting Rows" for details.
@@ -69,7 +69,7 @@ See "Filtering displayed rows" for an example of a filter expression in action, 
 - `and`, `or` and `not` need true-or-false operands: write `not (population > 100000000)` or `done == true` rather than `not population`.
 - `true` and `false` can be written as-is, e.g. `done == true`.
 - Comparisons and arithmetic coerce the way JavaScript does: a number cell compared with text naming a number (`population == "50340000"`) matches, and a blank cell counts as zero in `-`, `*`, `/` and `%` (`+` with a blank cell joins text, as in JavaScript). Dividing by zero or multiplying text gives a value that displays as `null` and is neither less nor greater than anything. `in` compares exactly.
-- A date cell (see "Filtering displayed rows") can be compared with another date cell, or with text naming a date: `start >= "2021-10-28"`. Dates and times written without a time zone are read in your local time zone, on both sides of the comparison.
+- Dates are text unless you set `cast_date: true` in `csvOptions` (see "Filtering displayed rows"). Text compares alphabetically, which puts year-first dates in order: `start >= "2021-10-28"`. A date cell can be compared with another date cell, or with text naming a date; dates and times written without a time zone are read in your local time zone, on both sides of the comparison.
 - A column whose name isn't a valid identifier (letters, digits and underscores, not starting with a digit) can be written in single quotes, as in `'Country Name' == "Colombia"`, or given a usable name with `columnVariables`.
 
 ### Selecting particular columns
@@ -170,7 +170,7 @@ filter: population < 100000000
     </tbody>
 </table>
 
-By default, cells holding a number are cast to numbers, and cells that look like a date with a four-digit year -- `2021-01-11`, `2021-01-11 08:00`, `2021/01/11` or `01/11/2021` -- are cast to dates, so your filter expressions can compare them. (Day-first forms such as `11.01.2021` are left as text, since JavaScript would read them month-first.) A date cell is displayed as `2021-01-11`, or `2021-01-11 08:00` when it has a time.
+By default, cells holding a number are cast to numbers for use in your filter expressions; everything else, dates included, stays text. Text compares alphabetically, so dates written year-first (`2021-10-28`, `2021-10-28 12:00`) can be filtered as they are:
 
 ~~~
 ```csvtable
@@ -179,7 +179,9 @@ filter: start >= "2021-10-28"
 ```
 ~~~
 
-(Set `cast_date: false` in `csvOptions` to keep dates as text, or `cast_date: true` to let csv-parse try to read every cell as a date, which it will also do to text like "March".) Also, note that your filter expression can also be provided as a list; those expressions will be and-ed together, e.g.:
+If you set `cast_date: true` in `csvOptions`, csv-parse turns every cell JavaScript can read as a date into one (including text like "March" or "meeting 5", so use it on files you know). A date cell is displayed as `2021-01-11`, or `2021-01-11 08:00` when it has a time, in your local time zone, and compares with text naming a date, as described under "Expressions".
+
+Also, note that your filter expression can also be provided as a list; those expressions will be and-ed together, e.g.:
 
 ~~~
 ```csvtable
@@ -277,8 +279,7 @@ Version 1.3 rebuilt the plugin on current tooling and newer versions of csv-pars
 
 - Requires Obsidian 1.13.1 or newer.
 - `maxRows` now counts the rows displayed, after filtering and sorting. It used to limit how many rows of the file were read before filtering, and sorting applied to that subset.
-- Only cells that look like a date with a four-digit year are cast to dates. Previously any text JavaScript could read as a date -- "March", "meeting 5", "1/2" -- became one. Set `cast_date: true` in `csvOptions` for the old behavior.
-- A date cell is displayed as `2021-01-11` or `2021-01-11 08:00`, in your local time zone, rather than as a quoted ISO timestamp. A bare date is also read as local midnight, so it compares consistently with cells that have a time.
+- `cast_date` in `csvOptions` now takes effect (1.2 dropped it, so dates were always text, whatever the old Readme said). It is off by default, as before. With it on, date cells display as `2021-01-11` or `2021-01-11 08:00` in your local time zone and compare with text naming a date.
 - csv-parse's `relax`, `skip_lines_with_empty_values` and `skip_lines_with_error` options were renamed in csv-parse 5; the old names still work here.
 - A byte order mark at the start of the file is skipped, so the first column of a CSV saved by Excel gets its proper name.
 - `and`, `or` and `not` require true-or-false operands; see "Expressions".

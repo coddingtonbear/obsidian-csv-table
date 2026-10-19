@@ -1,11 +1,6 @@
-import type {
-  CastingDateFunction,
-  InfoField,
-  Options as CsvParseOptions,
-} from "csv-parse";
+import type { Options as CsvParseOptions } from "csv-parse";
 import { parse as parseCsv } from "csv-parse/sync";
 
-import { parseDateText } from "./dates";
 import { compileRowExpression, errorMessage } from "./expression";
 import { CsvRow, CsvTableData, CsvTableSpec, ExtendedSortExpression } from "./types";
 import {
@@ -30,27 +25,6 @@ function toRow(record: unknown): CsvRow {
     return record as CsvRow;
   }
   throw new Error(`Unexpected CSV record: ${JSON.stringify(record)}`);
-}
-
-/** A cell that starts like a calendar date with a four-digit year:
- * 2021-01-11, 2021/01/11 or 01/11/2021, with or without a time after it.
- * Day-first forms such as 11.01.2021 are left as text, since JavaScript
- * would read them month-first. */
-const DATE_LIKE = /^(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}\/\d{1,2}\/\d{4})(\s|T|$)/;
-
-/** The default `cast_date`. csv-parse's own (`cast_date: true`) hands every
- * non-numeric cell to `Date.parse`, which reads text such as "meeting 5" or
- * "March" as a date; this casts only cells that look like one. Column names
- * (`context.header`) stay text.
- *
- * Like csv-parse's own implementation, this returns the text untouched when
- * it isn't a date; csv-parse's `CastingDateFunction` type says `Date` only,
- * hence the assertion where it's used. */
-function castDate(value: string, context: InfoField): Date | string {
-  if (context.header || !DATE_LIKE.test(value)) {
-    return value;
-  }
-  return parseDateText(value) ?? value;
 }
 
 /** csv-parse 5 renamed these options; blocks written for csv-parse 4 (this
@@ -113,7 +87,6 @@ function parseHeaderColumns(csvData: string, options: CsvParseOptions): string[]
 function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
   const {
     cast = true,
-    cast_date = castDate as CastingDateFunction,
     trim = true,
     columns = true,
     skip_empty_lines = true,
@@ -122,7 +95,6 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): ParsedCsv {
   } = renameCsvOptions(csvSpec.csvOptions ?? {});
   const options: CsvParseOptions = {
     cast,
-    cast_date,
     trim,
     columns,
     skip_empty_lines,

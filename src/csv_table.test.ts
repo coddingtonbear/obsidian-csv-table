@@ -185,48 +185,6 @@ describe("csv_table/getFilteredCsvData", () => {
     expect(actual.rows).toEqual([{ a: 1, b: 2 }]);
   });
 
-  test("casts dates so filters can compare them", () => {
-    const csvData = getCsvString([
-      ["Subject", "start"],
-      ["meeting 1", "2021-01-11 08:00"],
-      ["meeting 5", "2021-10-28 12:00"],
-    ]);
-    const actual = getFilteredCsvData(
-      { source: "a.csv", filter: 'start >= "2021-10-28"' },
-      csvData
-    );
-    expect(actual.rows.map((row) => row.Subject)).toEqual(["meeting 5"]);
-    expect(actual.rows[0].start).toBeInstanceOf(Date);
-  });
-
-  test("casts only cells that look like dates, read in local time", () => {
-    const actual = getFilteredCsvData(
-      { source: "a.csv" },
-      getCsvString([
-        ["text", "iso", "us", "other", "2021-01-01"],
-        ["meeting 5", "2021-01-11", "01/11/2021", "11.01.2021", "March"],
-        ["1 Jan", "2021-01-11T08:00:00Z", "1/2", "Room 2", "x"],
-        ["10-20", "2021-01-11 08:00", "2021/01/11", "1.2.3", "2021-13-45"],
-      ])
-    );
-    expect(actual.columns).toEqual(["text", "iso", "us", "other", "2021-01-01"]);
-    const [first, second, third] = actual.rows;
-    expect(first.text).toBe("meeting 5");
-    expect(first.iso).toEqual(new Date(2021, 0, 11));
-    expect(first.us).toEqual(new Date(2021, 0, 11));
-    expect(first.other).toBe("11.01.2021");
-    expect(first["2021-01-01"]).toBe("March");
-    expect(second.text).toBe("1 Jan");
-    expect(second.iso).toEqual(new Date("2021-01-11T08:00:00Z"));
-    expect(second.us).toBe("1/2");
-    expect(second.other).toBe("Room 2");
-    expect(third.text).toBe("10-20");
-    expect(third.iso).toEqual(new Date(2021, 0, 11, 8, 0));
-    expect(third.us).toEqual(new Date(2021, 0, 11));
-    expect(third.other).toBe("1.2.3");
-    expect(third["2021-01-01"]).toBe("2021-13-45");
-  });
-
   test("maps csv-parse 4 option names onto their csv-parse 5 names", () => {
     expect(
       getFilteredCsvData(
@@ -280,16 +238,28 @@ describe("csv_table/getFilteredCsvData", () => {
     ).toEqual({ columns: ["Country Name", "population / 1000000"], rows: [] });
   });
 
-  test("lets csvOptions choose csv-parse's own date casting", () => {
-    const csv = "a\nmeeting 5\n";
-    expect(
-      getFilteredCsvData({ source: "a.csv", csvOptions: { cast_date: true } }, csv)
-        .rows[0].a
-    ).toBeInstanceOf(Date);
-    expect(
-      getFilteredCsvData({ source: "a.csv", csvOptions: { cast_date: false } }, "a\n2021-01-11\n")
-        .rows[0].a
-    ).toBe("2021-01-11");
+  test("keeps dates as text unless csvOptions asks for date casting", () => {
+    const csvData = getCsvString([
+      ["Subject", "start"],
+      ["Standup", "2021-01-11 08:00"],
+      ["Retro", "2021-10-28 12:00"],
+    ]);
+    const asText = getFilteredCsvData(
+      { source: "a.csv", filter: 'start >= "2021-10-28"' },
+      csvData
+    );
+    expect(asText.rows.map((row) => row.start)).toEqual(["2021-10-28 12:00"]);
+
+    const asDates = getFilteredCsvData(
+      {
+        source: "a.csv",
+        filter: 'start >= "2021-10-28"',
+        csvOptions: { cast_date: true },
+      },
+      csvData
+    );
+    expect(asDates.rows.map((row) => row.Subject)).toEqual(["Retro"]);
+    expect(asDates.rows[0].start).toEqual(new Date(2021, 9, 28, 12, 0));
   });
 
   test("passes csvOptions through to the parser", () => {
