@@ -40,10 +40,59 @@ describe("expression/compileRowExpression", () => {
     expect(evaluate('start == "2021-10-28T12:00:00Z"', row)).toBe(true);
   });
 
-  test("reports text that is not a date when compared with a date", () => {
-    expect(() =>
-      evaluate('start > "yesterday"', { start: new Date("2021-01-01") })
-    ).toThrow(/Cannot read "yesterday" as a date/);
+  test("treats a date and text that is not a date as unequal", () => {
+    const row = { start: new Date("2021-01-01"), none: "" };
+    expect(evaluate('start > "yesterday"', row)).toBe(false);
+    expect(evaluate('start < "yesterday"', row)).toBe(false);
+    expect(evaluate('start == "TBD"', row)).toBe(false);
+    expect(evaluate('start != ""', row)).toBe(true);
+    expect(evaluate('none != ""', row)).toBe(false);
+  });
+
+  test("reads a bare date as local midnight, like a date with a time", () => {
+    const row = { start: new Date(2021, 9, 27, 20, 0) };
+    expect(evaluate('start >= "2021-10-28"', row)).toBe(false);
+    expect(evaluate('start >= "2021-10-27"', row)).toBe(true);
+    expect(evaluate('start < "2021-10-27 21:00"', row)).toBe(true);
+    expect(
+      evaluate('start == "2021-10-27"', { start: new Date(2021, 9, 27) })
+    ).toBe(true);
+  });
+
+  test("applies JavaScript's arithmetic coercions, as filtrex 2 did", () => {
+    const row = { n: 5, s: "abc", e: "", z: 90210, d: new Date(2021, 0, 1) };
+    expect(evaluate("e * 2", row)).toBe(0);
+    expect(evaluate("missing * 2", row)).toBe(null);
+    expect(evaluate("s * 2", row)).toBe(null);
+    expect(evaluate("-s", row)).toBe(null);
+    expect(evaluate("-e", row)).toBe(0);
+    expect(evaluate("n % 2", row)).toBe(1);
+    expect(evaluate("n ^ 2", row)).toBe(25);
+    expect(evaluate("n / 0", row)).toBe(null);
+    expect(evaluate("0 / 0", row)).toBe(null);
+    expect(evaluate("e + 1", row)).toBe("1");
+    expect(evaluate("missing + 1", row)).toBe(null);
+    expect(evaluate("s + 1", row)).toBe("abc1");
+    expect(evaluate("n + e", row)).toBe("5");
+    expect(evaluate("n - e", row)).toBe(5);
+    expect(evaluate("s - 1", row)).toBe(null);
+    expect(evaluate("d * 1", row)).toBe(row.d.getTime());
+    expect(evaluate("d + 1", row)).toBe(String(row.d) + "1");
+    expect(evaluate('n * "2"', row)).toBe(10);
+    expect(evaluate('"3" * "2"', row)).toBe(6);
+    expect(evaluate('"3" + 2', row)).toBe("32");
+    expect(evaluate("e * 2 > 1", row)).toBe(false);
+    expect(evaluate("e / 1000000", row)).toBe(0);
+  });
+
+  test("matches ~= against numbers and missing columns, as filtrex 2 did", () => {
+    const row = { z: 90210, t: "9x", e: "" };
+    expect(evaluate('z ~= "^9"', row)).toBe(true);
+    expect(evaluate('t ~= "^9"', row)).toBe(true);
+    expect(evaluate('e ~= "^$"', row)).toBe(true);
+    expect(evaluate('missing ~= "x"', row)).toBe(false);
+    expect(evaluate("z ~= 5", row)).toBe(false);
+    expect(evaluate("z ~= 9", row)).toBe(true);
   });
 
   test("never matches a comparison involving a value with no number", () => {

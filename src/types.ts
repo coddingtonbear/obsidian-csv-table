@@ -24,7 +24,9 @@ export interface ExtendedSortExpression {
 
 export interface CsvTableSpec {
   source: string;
-  csvOptions?: CsvParseOptions;
+  /** csv-parse options as written in the block; names csv-parse 4 used
+   * are accepted too (see `renameCsvOptions`). */
+  csvOptions?: CsvParseOptions & Record<string, unknown>;
   columns?: (NamedColumn | string)[];
   columnVariables?: Record<string, string>;
   filter?: string[] | string;

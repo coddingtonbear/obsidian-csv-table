@@ -193,26 +193,59 @@ describe("csv_table/getFilteredCsvData", () => {
     expect(actual.rows[0].start).toBeInstanceOf(Date);
   });
 
-  test("casts only cells that look like dates", () => {
+  test("casts only cells that look like dates, read in local time", () => {
     const actual = getFilteredCsvData(
       { source: "a.csv" },
       getCsvString([
-        ["text", "iso", "us", "dotted", "2021-01-01"],
+        ["text", "iso", "us", "other", "2021-01-01"],
         ["meeting 5", "2021-01-11", "01/11/2021", "11.01.2021", "March"],
         ["1 Jan", "2021-01-11T08:00:00Z", "1/2", "Room 2", "x"],
+        ["10-20", "2021-01-11 08:00", "2021/01/11", "1.2.3", "2021-13-45"],
       ])
     );
-    expect(actual.columns).toEqual(["text", "iso", "us", "dotted", "2021-01-01"]);
-    const [first, second] = actual.rows;
+    expect(actual.columns).toEqual(["text", "iso", "us", "other", "2021-01-01"]);
+    const [first, second, third] = actual.rows;
     expect(first.text).toBe("meeting 5");
-    expect(first.iso).toEqual(new Date("2021-01-11"));
-    expect(first.us).toEqual(new Date("01/11/2021"));
-    expect(first.dotted).toBeInstanceOf(Date);
+    expect(first.iso).toEqual(new Date(2021, 0, 11));
+    expect(first.us).toEqual(new Date(2021, 0, 11));
+    expect(first.other).toBe("11.01.2021");
     expect(first["2021-01-01"]).toBe("March");
     expect(second.text).toBe("1 Jan");
     expect(second.iso).toEqual(new Date("2021-01-11T08:00:00Z"));
-    expect(second.us).toBeInstanceOf(Date);
-    expect(second.dotted).toBe("Room 2");
+    expect(second.us).toBe("1/2");
+    expect(second.other).toBe("Room 2");
+    expect(third.text).toBe("10-20");
+    expect(third.iso).toEqual(new Date(2021, 0, 11, 8, 0));
+    expect(third.us).toEqual(new Date(2021, 0, 11));
+    expect(third.other).toBe("1.2.3");
+    expect(third["2021-01-01"]).toBe("2021-13-45");
+  });
+
+  test("maps csv-parse 4 option names onto their csv-parse 5 names", () => {
+    expect(
+      getFilteredCsvData(
+        { source: "a.csv", csvOptions: { relax: true } },
+        'a,b\n1,x"y\n'
+      ).rows
+    ).toEqual([{ a: 1, b: 'x"y' }]);
+    expect(
+      getFilteredCsvData(
+        { source: "a.csv", csvOptions: { skip_lines_with_empty_values: true } },
+        "a,b\n1,2\n,\n3,4\n"
+      ).rows
+    ).toEqual([
+      { a: 1, b: 2 },
+      { a: 3, b: 4 },
+    ]);
+  });
+
+  test("renders an empty table for a header-only CSV with named columns", () => {
+    expect(
+      getFilteredCsvData(
+        { source: "a.csv", columns: ["Country Name", "population / 1000000"] },
+        "Country Name,population\n"
+      )
+    ).toEqual({ columns: ["Country Name", "population / 1000000"], rows: [] });
   });
 
   test("lets csvOptions choose csv-parse's own date casting", () => {

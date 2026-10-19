@@ -52,6 +52,28 @@ sortBy:
     ).toMatchObject({ sortBy: { expression: "x", reversed: true } });
   });
 
+  test("treats a key left blank as not given", () => {
+    expect(
+      parseTableSpec(
+        "source: a.csv\ncsvOptions:\ncolumns:\ncolumnVariables:\nfilter:\nmaxRows:\nsortBy:"
+      )
+    ).toEqual({ source: "a.csv" });
+  });
+
+  test("accepts a column given by name only", () => {
+    expect(
+      parseTableSpec("source: a.csv\ncolumns:\n- name: population")
+    ).toMatchObject({
+      columns: [{ name: "population", expression: "population" }],
+    });
+  });
+
+  test("accepts numeric column names in columnVariables", () => {
+    expect(
+      parseTableSpec("source: a.csv\ncolumnVariables:\n  y: 2020\n  first: 0")
+    ).toMatchObject({ columnVariables: { y: "2020", first: "0" } });
+  });
+
   test("ignores unknown keys", () => {
     expect(parseTableSpec("source: a.csv\nsomethingElse: 1")).toEqual({
       source: "a.csv",
@@ -88,13 +110,16 @@ sortBy:
       /'columns' must be a list/
     );
     expect(() =>
-      parseTableSpec("source: a.csv\ncolumns:\n- name: x")
+      parseTableSpec("source: a.csv\ncolumns:\n- expression: x")
+    ).toThrow(/'columns' must be a list/);
+    expect(() =>
+      parseTableSpec("source: a.csv\ncolumns:\n- name: x\n  expression: 1")
     ).toThrow(/'columns' must be a list/);
     expect(() =>
       parseTableSpec("source: a.csv\ncolumnVariables:\n- a")
     ).toThrow(/'columnVariables' must be a mapping/);
     expect(() =>
-      parseTableSpec("source: a.csv\ncolumnVariables:\n  a: 1")
+      parseTableSpec("source: a.csv\ncolumnVariables:\n  a: [1]")
     ).toThrow(/'columnVariables' must be a mapping/);
     expect(() => parseTableSpec("source: a.csv\nfilter:\n  a: 1")).toThrow(
       /'filter' must be an expression/

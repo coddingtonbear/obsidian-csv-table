@@ -7,18 +7,35 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isStringRecord(value: unknown): value is Record<string, string> {
-  return (
-    isRecord(value) && Object.values(value).every((v) => typeof v === "string")
-  );
+/** A column name may be written as a number (`year: 2020`, or a position
+ * when `columns` is off); row keys are text, so the name is read as text. */
+function toColumnVariables(
+  value: Record<string, unknown>
+): Record<string, string> | undefined {
+  const variables: Record<string, string> = {};
+  for (const [name, columnName] of Object.entries(value)) {
+    if (typeof columnName === "string") {
+      variables[name] = columnName;
+    } else if (typeof columnName === "number") {
+      variables[name] = String(columnName);
+    } else {
+      return undefined;
+    }
+  }
+  return variables;
 }
 
-function isNamedColumn(value: unknown): value is NamedColumn {
-  return (
-    isRecord(value) &&
-    typeof value.name === "string" &&
-    typeof value.expression === "string"
-  );
+/** `{ name }` alone names an existing column, as it did in 1.2. */
+function toNamedColumn(value: unknown): NamedColumn | undefined {
+  if (!isRecord(value) || typeof value.name !== "string") {
+    return undefined;
+  }
+  if (value.expression === undefined || value.expression === null) {
+    return { name: value.name, expression: value.name };
+  }
+  return typeof value.expression === "string"
+    ? { name: value.name, expression: value.expression }
+    : undefined;
 }
 
 function isSortExpression(value: unknown): value is ExtendedSortExpression {
@@ -38,9 +55,10 @@ function isListOf<T>(
 
 const isString = (value: unknown): value is string => typeof value === "string";
 
-/** Parses and validates a `csvtable` code block. Unknown keys are ignored;
- * a known key of the wrong shape is an error naming the key, since the
- * commonest mistake is writing a mapping as a list (`csvOptions:\n- delimiter: ;`). */
+/** Parses and validates a `csvtable` code block. Unknown keys are ignored,
+ * and so is a key left blank (YAML `null`); a known key of the wrong shape
+ * is an error naming the key, since the commonest mistake is writing a
+ * mapping as a list (`csvOptions:\n- delimiter: ;`). */
 export function parseTableSpec(text: string): CsvTableSpec {
   let parsed: unknown;
   try {
@@ -52,17 +70,18 @@ export function parseTableSpec(text: string): CsvTableSpec {
     throw new Error("The CSV table spec must be a YAML mapping.");
   }
 
-  const {
-    source,
-    csvOptions,
-    columns,
-    columnVariables,
-    filter,
-    maxRows,
-    sortBy,
-  } = parsed;
+  // A key left blank (`filter:`) parses as null and means "not given".
+  const given = (name: string): unknown =>
+    parsed[name] === null ? undefined : parsed[name];
+  const source = given("source");
+  const csvOptions = given("csvOptions");
+  const columns = given("columns");
+  const columnVariables = given("columnVariables");
+  const filter = given("filter");
+  const maxRows = given("maxRows");
+  const sortBy = given("sortBy");
 
-  if (source === undefined || source === null || source === "") {
+  if (source === undefined || source === "") {
     throw new Error("Parameter 'source' is required.");
   }
   if (typeof source !== "string") {
@@ -79,26 +98,28 @@ export function parseTableSpec(text: string): CsvTableSpec {
     spec.csvOptions = csvOptions;
   }
   if (columns !== undefined) {
-    if (
-      !isListOf(
-        columns,
-        (item): item is string | NamedColumn =>
-          isString(item) || isNamedColumn(item)
-      )
-    ) {
+    const named = Array.isArray(columns)
+      ? columns.map((item: unknown) =>
+          isString(item) ? item : toNamedColumn(item)
+        )
+      : undefined;
+    if (named === undefined || named.some((item) => item === undefined)) {
       throw new Error(
         "Parameter 'columns' must be a list of column names, expressions, or {name, expression} mappings."
       );
     }
-    spec.columns = columns;
+    spec.columns = named as (string | NamedColumn)[];
   }
   if (columnVariables !== undefined) {
-    if (!isStringRecord(columnVariables)) {
+    const variables = isRecord(columnVariables)
+      ? toColumnVariables(columnVariables)
+      : undefined;
+    if (variables === undefined) {
       throw new Error(
         "Parameter 'columnVariables' must be a mapping of variable names to column names."
       );
     }
-    spec.columnVariables = columnVariables;
+    spec.columnVariables = variables;
   }
   if (filter !== undefined) {
     if (!isString(filter) && !isListOf(filter, isString)) {

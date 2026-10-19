@@ -5,6 +5,7 @@ import { CsvRow, NamedColumn } from "./types";
 import {
   applyRowFilters,
   evaluateExpression,
+  formatDate,
   getColumnInfo,
   getCellDisplay,
   sortRows,
@@ -233,6 +234,19 @@ describe("util/sortRows", () => {
     ).toEqual(["third", "first", "second"]);
   });
 
+  test("Orders a date against text naming a date, as filters do", () => {
+    const rows: CsvRow[] = [
+      { name: "b", when: new Date(2021, 2, 1) },
+      { name: "a", when: "2021-01-01" },
+      { name: "c", when: new Date(2021, 1, 1) },
+    ];
+    expect(
+      sortRows([{ expression: "when", reversed: false }], rows).map(
+        (row) => row.name
+      )
+    ).toEqual(["a", "c", "b"]);
+  });
+
   test("Does not reorder the caller's rows", () => {
     const rows = [...EXAMPLE_ROWS];
     sortRows([{ expression: "population", reversed: false }], rows);
@@ -288,6 +302,29 @@ describe("util/getCellDisplay", () => {
 
   test("Shows nothing for a missing cell", () => {
     expect(getCellDisplay({}, "value")).toEqual("");
+  });
+
+  test("Shows a date as the CSV wrote it", () => {
+    expect(getCellDisplay({ d: new Date(2021, 0, 11) }, "d")).toEqual(
+      "2021-01-11"
+    );
+    expect(getCellDisplay({ d: new Date(2021, 0, 11, 8, 0) }, "d")).toEqual(
+      "2021-01-11 08:00"
+    );
+  });
+});
+
+describe("util/formatDate", () => {
+  test("writes local dates and times", () => {
+    expect(formatDate(new Date(2021, 0, 11))).toEqual("2021-01-11");
+    expect(formatDate(new Date(2021, 11, 1, 8, 5))).toEqual("2021-12-01 08:05");
+    expect(formatDate(new Date(2021, 0, 11, 8, 0, 30))).toEqual(
+      "2021-01-11 08:00:30"
+    );
+    expect(formatDate(new Date(2021, 0, 11, 0, 0, 0, 5))).toEqual(
+      "2021-01-11 00:00:00"
+    );
+    expect(formatDate(new Date(NaN))).toEqual("Invalid Date");
   });
 });
 

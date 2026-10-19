@@ -1,7 +1,11 @@
-import type { CastingDateFunction, InfoField } from "csv-parse";
+import type {
+  CastingDateFunction,
+  InfoField,
+  Options as CsvParseOptions,
+} from "csv-parse";
 import { parse as parseCsv } from "csv-parse/sync";
 
-import { compileRowExpression, errorMessage } from "./expression";
+import { compileRowExpression, errorMessage, parseDateText } from "./expression";
 import { CsvRow, CsvTableData, CsvTableSpec, ExtendedSortExpression } from "./types";
 import {
   applyRowFilters,
@@ -27,9 +31,11 @@ function toRow(record: unknown): CsvRow {
   throw new Error(`Unexpected CSV record: ${JSON.stringify(record)}`);
 }
 
-/** A cell that starts like a calendar date: digits, a separator, and more
- * digits, as in 2021-01-11, 01/11/2021 or 11.01.2021. */
-const DATE_LIKE = /^\d{1,4}[-/.]\d/;
+/** A cell that starts like a calendar date with a four-digit year:
+ * 2021-01-11, 2021/01/11 or 01/11/2021, with or without a time after it.
+ * Day-first forms such as 11.01.2021 are left as text, since JavaScript
+ * would read them month-first. */
+const DATE_LIKE = /^(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}\/\d{1,2}\/\d{4})(\s|T|$)/;
 
 /** The default `cast_date`. csv-parse's own (`cast_date: true`) hands every
  * non-numeric cell to `Date.parse`, which reads text such as "meeting 5" or
@@ -43,8 +49,24 @@ function castDate(value: string, context: InfoField): Date | string {
   if (context.header || !DATE_LIKE.test(value)) {
     return value;
   }
-  const time = Date.parse(value);
-  return Number.isNaN(time) ? value : new Date(time);
+  return parseDateText(value) ?? value;
+}
+
+/** csv-parse 5 renamed these options; blocks written for csv-parse 4 (this
+ * plugin until 1.2) keep working. csv-parse ignores names it doesn't know. */
+const RENAMED_CSV_OPTIONS: Record<string, string> = {
+  relax: "relax_quotes",
+  skip_lines_with_empty_values: "skip_records_with_empty_values",
+  skip_lines_with_error: "skip_records_with_error",
+};
+
+function renameCsvOptions(options: CsvParseOptions): CsvParseOptions {
+  return Object.fromEntries(
+    Object.entries(options).map(([name, value]: [string, unknown]) => [
+      RENAMED_CSV_OPTIONS[name] ?? name,
+      value,
+    ])
+  );
 }
 
 function parseRows(csvData: string, csvSpec: CsvTableSpec): CsvRow[] {
@@ -56,7 +78,7 @@ function parseRows(csvData: string, csvSpec: CsvTableSpec): CsvRow[] {
     skip_empty_lines = true,
     bom = true,
     ...extraOptions
-  } = csvSpec.csvOptions ?? {};
+  } = renameCsvOptions(csvSpec.csvOptions ?? {});
   // csv-parse's sync `parse` is typed as returning `any`.
   const records: unknown = parseCsv(csvData, {
     cast,
@@ -86,9 +108,10 @@ export function getFilteredCsvData(
     for (const column of csvSpec.columns ?? rowColumns) {
       const columnInfo = getColumnInfo(column);
 
-      // Do not attempt to compile/set the expression value
-      // if it already exists in our known row columns
-      if (!rowColumns.includes(columnInfo.name)) {
+      // Do not attempt to compile/set the expression value if it already
+      // exists in our known row columns (or there are no rows to know
+      // the columns from).
+      if (parsedCsvData.length > 0 && !rowColumns.includes(columnInfo.name)) {
         const expression = compileRowExpression(columnInfo.expression);
         for (const row of parsedCsvData) {
           row[columnInfo.name] = evaluateExpression(
