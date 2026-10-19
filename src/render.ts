@@ -1,44 +1,47 @@
-import { MarkdownRenderChild } from 'obsidian';
+import { MarkdownRenderChild } from "obsidian";
 
-import { getCellDisplay, getColumnInfo } from './util'
+import { CsvRow } from "./types";
+import { getCellDisplay } from "./util";
 
 export class TableRenderer extends MarkdownRenderChild {
-  constructor(public columns: string[], public rows: any[], public container: HTMLElement) {
-    super(container)
+  constructor(
+    public columns: string[],
+    public rows: CsvRow[],
+    public container: HTMLElement
+  ) {
+    super(container);
   }
 
-  async onload() {
-    await this.render()
+  onload(): void {
+    this.render();
   }
 
-  async render() {
-    const tableEl = this.container.createEl('table')
+  render(): void {
+    const tableEl = this.container.createEl("table");
 
-    const theadEl = tableEl.createEl('thead')
-    const headerEl = theadEl.createEl('tr')
-    const tbodyEl = tableEl.createEl('tbody')
-
-    const columnNames: string[] = []
+    const theadEl = tableEl.createEl("thead");
+    const headerEl = theadEl.createEl("tr");
+    const tbodyEl = tableEl.createEl("tbody");
 
     for (const column of this.columns) {
-      const columnInfo = getColumnInfo(column)
-
-      headerEl.createEl('th', { text: columnInfo.name })
-      columnNames.push(columnInfo.name)
+      headerEl.createEl("th", { text: column });
     }
 
     for (const row of this.rows) {
-      const trEl = tbodyEl.createEl('tr')
+      const trEl = tbodyEl.createEl("tr");
 
-      for (const columnName of columnNames) {
-        trEl.createEl('td', { text: getCellDisplay(row, columnName) })
+      for (const column of this.columns) {
+        trEl.createEl("td", { text: getCellDisplay(row, column) });
       }
     }
   }
 }
 
-export function renderErrorPre(container: HTMLElement, error: string): HTMLElement {
-  let pre = container.createEl('pre', { cls: ["csv-table", "csv-error"] });
+export function renderErrorPre(
+  container: HTMLElement,
+  error: string
+): HTMLElement {
+  const pre = container.createEl("pre", { cls: ["csv-table", "csv-error"] });
   pre.appendText(error);
   return pre;
 }

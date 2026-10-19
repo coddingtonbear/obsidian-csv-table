@@ -1,30 +1,20 @@
-import { Plugin, parseYaml, TFile } from "obsidian";
+import { Plugin } from "obsidian";
 
 import { getFilteredCsvData } from "./csv_table";
+import { errorMessage } from "./expression";
 import { TableRenderer, renderErrorPre } from "./render";
-import { CsvTableSpec } from "./types";
+import { parseTableSpec } from "./spec";
 
 export default class CsvTablePlugin extends Plugin {
-  async onload() {
+  onload(): void {
     this.registerMarkdownCodeBlockProcessor(
       "csvtable",
-      async (csvSpecString: string, el, ctx) => {
+      async (csvSpecString, el, ctx) => {
         try {
-          let tableSpec: CsvTableSpec = {
-            source: "", // Assert that this has a proper value below
-          };
-          try {
-            tableSpec = parseYaml(csvSpecString);
-          } catch (e) {
-            throw new Error(`Could not parse CSV table spec: ${e.message}`);
-          }
+          const tableSpec = parseTableSpec(csvSpecString);
 
-          if (!tableSpec.source) {
-            throw new Error("Parameter 'source' is required.");
-          }
-
-          const file = this.app.vault.getAbstractFileByPath(tableSpec.source);
-          if (!(file instanceof TFile)) {
+          const file = this.app.vault.getFileByPath(tableSpec.source);
+          if (file === null) {
             throw new Error(
               `CSV file '${tableSpec.source}' could not be found.`
             );
@@ -36,8 +26,7 @@ export default class CsvTablePlugin extends Plugin {
             new TableRenderer(filteredCsvData.columns, filteredCsvData.rows, el)
           );
         } catch (e) {
-          renderErrorPre(el, e.message);
-          return;
+          renderErrorPre(el, errorMessage(e));
         }
       }
     );
